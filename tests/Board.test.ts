@@ -188,6 +188,16 @@ describe("Board", () => {
       ).toBe(true);
     });
   });
+  describe("getOpenAreas", () => {
+    it("finds a trivial open area", () => {
+      const openAreas = Board.fromString(dedupe`
+        --
+        --
+      `, gridRules).getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].length).toBe(4);
+    })
+  })
   describe("isValidPartial", () => {
     it("rejects isolated endpoints", () => {
       const boardString = dedent`
@@ -230,6 +240,25 @@ describe("Board", () => {
         true
       );
     });
-
+    it("rejects a board knotted endpoints", () => {
+      const boardString = dedent`
+        B-Y
+        ---
+        Y-B
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        false
+      );
+    });
+    it("rejects a board knotted tails", () => {
+      const boardString = dedent`
+        ByY
+        b-b
+        YyB
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        false
+      );
+    });
   });
 });

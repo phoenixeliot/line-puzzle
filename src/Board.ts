@@ -10,11 +10,28 @@ export class Cell {
   color: string;
   position: Position;
   isEndpoint: boolean;
+  board: Board;
 
-  constructor({ color, position, isEndpoint }) {
+  constructor({ color, position, isEndpoint, board }) {
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
+    this.board = board;
+  }
+
+  isTail(cell: Cell) {
+    const numSameColorNeighbors = this.board.getSameColorNeighborCells(
+      cell.position
+    ).length;
+    if (numSameColorNeighbors === 0) {
+      yield cell;
+    }
+    if (
+      this.board.getSameColorNeighborCells(cell.position).length === 1 &&
+      !cell.isEndpoint
+    ) {
+      yield cell;
+    }
   }
 }
 
@@ -264,6 +281,32 @@ export class Board {
       }
     }
     return false;
+  }
+
+  getOpenAreas(): Array<Array<Position>> {
+    // find the open areas
+    const areas = [];
+    const remainingCells = new SerializedSet(Array.from(this.iterateCells()));
+    while (remainingCells.size > 0) {
+      remainingCells.forEach((cell) => {
+        // either:
+        // 1. cell is empty or a tail
+        //   -> start an area there, explore it to completion
+        if (WALL.includes(cell.color) || this.isTail(position))
+        // 2. cell is part of a wall
+        //   -> ignore it, remove from remainingCells
+        // 3. cell is part of a line segment
+        //   -> ignore it, remove from remainingCells
+      })
+    }
+    return areas
+  }
+
+  getEdgeColorOrdering(startPos: Position) {
+    // identify the open spaces
+    // for each open space, find an edge cell (space next to a line, or tail of a line, or a start cell)
+    // with an edge cell, trace the edge using clockwise moves and record all of those cells
+    // given the list of edge cells, get the order of all colored
   }
 
   /**
