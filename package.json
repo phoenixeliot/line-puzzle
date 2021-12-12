@@ -1,0 +1,17 @@
+{
+  "name": "line-puzzle",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Phoenix Eliot <phoenixjeliot@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.16.0",
+    "jest": "^27.4.4"
+  },
+  "dependencies": {
+  }
+}
