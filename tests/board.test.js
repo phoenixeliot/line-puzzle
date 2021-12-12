@@ -4,7 +4,33 @@ import { Board } from "../src/board.js";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
 
+describe("dedent utility", () => {
+  it("Removes extraneous whitespace", () => {
+    expect(dedent`
+      ABC
+      #-D
+      .a2
+    `).toEqual("ABC\n#-D\n.a2")
+  })
+})
+
 describe("Board", () => {
+  describe("toString", () => {
+    it("prints out a board identical to the input", () => {
+      const boardString = dedent`
+        OBBY
+        O#BB
+        OO#B
+        YO--
+      `;
+      expect(
+        Board.fromString(
+          boardString,
+          gridRules
+        ).toString()
+      ).toEqual(boardString);
+    })
+  })
   describe("getColors", () => {
     it("returns the colors of a board", () => {
       expect(
@@ -19,7 +45,7 @@ describe("Board", () => {
     });
   });
   describe("isComplete", () => {
-    test("it checks if board is completely filled", () => {
+    it("checks if board is completely filled", () => {
       expect(
         Board.fromString(
           dedent`
@@ -42,7 +68,7 @@ describe("Board", () => {
       ).toBe(false);
     });
 
-    test("it makes sure all lines are complete", () => {
+    it("makes sure all lines are complete", () => {
       expect(
         Board.fromString(
           dedent`
