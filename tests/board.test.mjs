@@ -1,6 +1,6 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
 import { dedent } from "./utils";
-import { Board } from "../src/board.js";
+import { Board } from "../src/board";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
 
@@ -10,9 +10,9 @@ describe("dedent utility", () => {
       ABC
       #-D
       .a2
-    `).toEqual("ABC\n#-D\n.a2")
-  })
-})
+    `).toEqual("ABC\n#-D\n.a2");
+  });
+});
 
 describe("Board", () => {
   describe("toString", () => {
@@ -23,14 +23,11 @@ describe("Board", () => {
         oo#B
         YO--
       `;
-      expect(
-        Board.fromString(
-          boardString,
-          gridRules
-        ).toString()
-      ).toEqual(boardString);
-    })
-  })
+      expect(Board.fromString(boardString, gridRules).toString()).toEqual(
+        boardString
+      );
+    });
+  });
   describe("getColors", () => {
     it("returns the colors of a board", () => {
       expect(
@@ -105,6 +102,66 @@ describe("Board", () => {
           gridRules
         ).isComplete()
       ).toBe(false);
+    });
+  });
+  describe("iterateTails", () => {
+    it("returns endpoints if there are no line segments yet", () => {
+      const tails = Array.from(Board.fromString(dedent`
+        O-O
+      `, gridRules).iterateTails());
+      expect(tails.length).toBe(2);
+      const tails2 = Array.from(Board.fromString(dedent`
+        OBY
+        ---
+        OBY
+      `, gridRules).iterateTails());
+      expect(tails2.length).toBe(6);
+    });
+    it("returns a mix of endpoints and tails", () => {
+      const tails = Array.from(Board.fromString(dedent`
+        O-oO
+      `, gridRules).iterateTails());
+      expect(tails.length).toBe(2);
+      const tails2 = Array.from(Board.fromString(dedent`
+        OBY
+        -b-
+        o-y
+        OBY
+      `, gridRules).iterateTails());
+      expect(tails2.length).toBe(6);
+    })
+    it("returns tails", () => {
+      const tails = Array.from(Board.fromString(dedent`
+        Oo-oO
+      `, gridRules).iterateTails());
+      expect(tails.length).toBe(2);
+      const tails2 = Array.from(Board.fromString(dedent`
+        OBY
+        oby
+        ---
+        oby
+        OBY
+      `, gridRules).iterateTails());
+      expect(tails2.length).toBe(6);
+    })
+  });
+  describe("isValidPartial", () => {
+    it("detects isolated endpoints", () => {
+      const boardString = dedent`
+        ObB
+        BbY
+        OYy
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
+    it("accepts a board with open space", () => {
+      const boardString = dedent`
+        O-B
+        --Y
+        OB-
+        Y--
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
     });
   });
 });

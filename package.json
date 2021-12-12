@@ -4,19 +4,18 @@
   "main": "index.js",
   "author": "Phoenix Eliot <phoenixjeliot@gmail.com>",
   "license": "MIT",
-  "type": "module",
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.0",
+    "@types/jest": "^27.0.3",
     "babel-jest": "^27.4.4",
-    "jest": "^27.4.4"
+    "jest": "^27.4.4",
+    "ts-jest": "^27.1.1",
+    "typescript": "^4.5.3"
   },
   "dependencies": {
     "@babel/preset-env": "^7.16.4"
-  },
-  "jest": {
-    "setupFiles": ["./tests/setupTests.js"]
   }
 }

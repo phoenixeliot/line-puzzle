@@ -5,6 +5,10 @@ export const COLORS = ENDPOINT_COLORS + PATH_COLORS;
 export const EMPTY = "-";
 
 export class Cell {
+  color: string;
+  position: Position;
+  isEndpoint: boolean;
+
   constructor({ color, position, isEndpoint }) {
     this.color = color;
     this.position = position;
@@ -18,25 +22,25 @@ function setIsEqual(set, otherSet) {
   );
 }
 
+interface Position {
+  x: number,
+  y: number,
+}
+
 export class Board {
+  data: Array<Array<Cell>>;
+  rules: any; // TODO: Make a proper interface for this
+
   /**
    *
    * @param {*} data - Grid cell data
    * @param {*} rules - Board rules (eg which cells are connected to others, eg grid vs hex)
    * @param {Object} options
-   * @param {Boolean} options.isInitial - True if the board is completely unsolved (only endpoints on lines)
+   * @param {boolean} options.isInitial - True if the board is completely unsolved (only endpoints on lines)
    */
-  constructor(data, rules, { isInitial = false } = {}) {
+  constructor(data, rules) {
     this.data = data;
     this.rules = rules;
-    this.isInitial = isInitial;
-
-    if (isInitial) {
-      // Mark the starting cells as starting cells
-      for (const starterCell of this.iterateFilledCells()) {
-        starterCell.isEndpoint = true;
-      }
-    }
   }
 
   static fromString(boardString, rules) {
@@ -75,11 +79,13 @@ export class Board {
     return this.getCell(position).color;
   }
 
-  getCell(position) {
+  getCell(position: Position) {
+    if (!this || !this.data || !this.data[position.x]) debugger;
     return this.data[position.y][position.x];
   }
 
   getNeighborPositions(position) {
+    debugger;
     const directions = this.rules.getNeighborDirections(position);
     return directions
       .map((direction) => {
@@ -99,7 +105,7 @@ export class Board {
     return this.getNeighborPositions(position).map((pos) => this.getCell(pos));
   }
 
-  getSameColorNeighborCells(position) {
+  getSameColorNeighborCells(position: Position) {
     const cell = this.getCell(position);
     return this.getNeighborCells(position).filter(
       (neighbor) => neighbor.color === cell.color
@@ -132,11 +138,16 @@ export class Board {
   }
 
   /**
-   * Finds all the loose tails (not starter cells) of lines
+   * Finds all the loose tails of current lines
+   * Will return starter cell if it has no line yet
    */
   *iterateTails() {
     for (const cell of this.iterateFilledCells()) {
-      if (this.getSameColorNeighborCells(cell).length === 1) {
+      const numSameColorNeighbors = this.getSameColorNeighborCells(cell.position).length;
+      if (numSameColorNeighbors === 0) {
+        yield cell;
+      }
+      if (this.getSameColorNeighborCells(cell.position).length === 1 && !cell.isEndpoint) {
         yield cell;
       }
     }
@@ -165,11 +176,14 @@ export class Board {
             return numSameColorNeighbors;
           })
       );
-      debugger;
       return (
         setIsEqual(counts, new Set([1, 2])) || setIsEqual(counts, new Set([1]))
       );
     });
+  }
+
+  findValidPath(pos1, pos2) {
+
   }
 
   /**
@@ -179,6 +193,9 @@ export class Board {
   isValidPartial() {
     // Check if any paths have been isolated from their other halves
     // 1. Find the two unjoined tail ends of each current incomplete line
+    for (const tailCell1 of this.iterateTails()){
+
+    }
     // 2. Run A* to find a path between the tails. If no path, then invalid
   }
 }
