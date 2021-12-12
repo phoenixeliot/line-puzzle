@@ -13,5 +13,5 @@ module.exports = {
     "**/?(*.)+(spec|test).?(m)[jt]s?(x)",
   ],
   moduleFileExtensions: ["js", "jsx", "ts", "mjs"],
-  setupFiles: ["./tests/setupTests.mjs"],
+  setupFiles: ["./tests/setupTests.ts"],
 };

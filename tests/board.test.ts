@@ -34,9 +34,10 @@ describe("Board", () => {
         Board.fromString(
           dedent`
             B#-
-            #Y-
+            #Yy
             O--
-          `
+          `,
+          gridRules
         ).getColors()
       ).toEqual(new Set(["B", "Y", "O"]));
     });
@@ -106,54 +107,118 @@ describe("Board", () => {
   });
   describe("iterateTails", () => {
     it("returns endpoints if there are no line segments yet", () => {
-      const tails = Array.from(Board.fromString(dedent`
+      const tails = Array.from(
+        Board.fromString(
+          dedent`
         O-O
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails.length).toBe(2);
-      const tails2 = Array.from(Board.fromString(dedent`
+      const tails2 = Array.from(
+        Board.fromString(
+          dedent`
         OBY
         ---
         OBY
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails2.length).toBe(6);
     });
     it("returns a mix of endpoints and tails", () => {
-      const tails = Array.from(Board.fromString(dedent`
+      const tails = Array.from(
+        Board.fromString(
+          dedent`
         O-oO
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails.length).toBe(2);
-      const tails2 = Array.from(Board.fromString(dedent`
+      const tails2 = Array.from(
+        Board.fromString(
+          dedent`
         OBY
         -b-
         o-y
         OBY
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails2.length).toBe(6);
-    })
+    });
     it("returns tails", () => {
-      const tails = Array.from(Board.fromString(dedent`
+      const tails = Array.from(
+        Board.fromString(
+          dedent`
         Oo-oO
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails.length).toBe(2);
-      const tails2 = Array.from(Board.fromString(dedent`
+      const tails2 = Array.from(
+        Board.fromString(
+          dedent`
         OBY
         oby
         ---
         oby
         OBY
-      `, gridRules).iterateTails());
+      `,
+          gridRules
+        ).iterateTails()
+      );
       expect(tails2.length).toBe(6);
-    })
+    });
+  });
+  describe("canConnect", () => {
+    it("detects unconnectable paths", () => {
+      expect(
+        Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+      ).toBe(false);
+    });
+    it("detects connectable paths", () => {
+      expect(
+        Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+      ).toBe(true);
+    });
   });
   describe("isValidPartial", () => {
-    it("detects isolated endpoints", () => {
+    it("rejects isolated endpoints", () => {
       const boardString = dedent`
         ObB
         BbY
         OYy
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        false
+      );
     });
+    it("rejects separated sides", () => {
+      const boardString = dedent`
+        --Y-O
+        --y--
+        O-Y--
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        false
+      );
+    })
+    it("accepts grids with items on same side of a separation", () => {
+      const boardString = dedent`
+        O-Y--
+        --y--
+        O-Y--
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        true
+      );
+    })
     it("accepts a board with open space", () => {
       const boardString = dedent`
         O-B
@@ -161,7 +226,10 @@ describe("Board", () => {
         OB-
         Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
+        true
+      );
     });
+
   });
 });
