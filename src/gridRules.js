@@ -1,3 +1,6 @@
+// Other possible rules to vary:
+// - Must fill entire board
+
 export function getNeighborDirections(position) {
   return [
     // Pure cardinal directions

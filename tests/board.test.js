@@ -18,9 +18,9 @@ describe("Board", () => {
   describe("toString", () => {
     it("prints out a board identical to the input", () => {
       const boardString = dedent`
-        OBBY
-        O#BB
-        OO#B
+        OBbY
+        o#bb
+        oo#B
         YO--
       `;
       expect(
@@ -50,7 +50,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
             BYO
-            BYO
+            byo
             BYO
           `,
           gridRules
@@ -59,8 +59,8 @@ describe("Board", () => {
       expect(
         Board.fromString(
           dedent`
-            BYY
-            BY-
+            ByY
+            by-
             BY-
           `,
           gridRules
@@ -73,7 +73,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
             B
-            B
+            b
             B
           `,
           gridRules
@@ -86,7 +86,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
             BYO
-            BYO
+            byo
             BYO
           `,
           gridRules
@@ -97,10 +97,10 @@ describe("Board", () => {
       expect(
         Board.fromString(
           dedent`
-            OBBY
-            O#BB
-            OO#B
-            YOOO
+            OBbY
+            o#bb
+            oo#B
+            YooO
           `,
           gridRules
         ).isComplete()

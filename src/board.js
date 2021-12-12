@@ -1,11 +1,14 @@
 export const WALL = "#";
-export const COLORS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const ENDPOINT_COLORS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const PATH_COLORS = "abcdefghijklmnopqrstuvwxyz";
+export const COLORS = ENDPOINT_COLORS + PATH_COLORS;
 export const EMPTY = "-";
 
 export class Cell {
-  constructor(color, position) {
+  constructor({ color, position, isEndpoint }) {
     this.color = color;
     this.position = position;
+    this.isEndpoint = isEndpoint;
   }
 }
 
@@ -16,9 +19,24 @@ function setIsEqual(set, otherSet) {
 }
 
 export class Board {
-  constructor(data, rules) {
+  /**
+   *
+   * @param {*} data - Grid cell data
+   * @param {*} rules - Board rules (eg which cells are connected to others, eg grid vs hex)
+   * @param {Object} options
+   * @param {Boolean} options.isInitial - True if the board is completely unsolved (only endpoints on lines)
+   */
+  constructor(data, rules, { isInitial = false } = {}) {
     this.data = data;
     this.rules = rules;
+    this.isInitial = isInitial;
+
+    if (isInitial) {
+      // Mark the starting cells as starting cells
+      for (const starterCell of this.iterateFilledCells()) {
+        starterCell.isEndpoint = true;
+      }
+    }
   }
 
   static fromString(boardString, rules) {
@@ -27,7 +45,11 @@ export class Board {
       .split("\n")
       .map((row, y) =>
         row.split("").map((color, x) => {
-          return new Cell(color, { x, y });
+          return new Cell({
+            color: color.toUpperCase(),
+            isEndpoint: ENDPOINT_COLORS.includes(color),
+            position: { x, y },
+          });
         })
       );
     return new Board(boardData, rules);
@@ -35,7 +57,7 @@ export class Board {
 
   toString() {
     return this.data
-      .map((row) => row.map((cell) => cell.color).join(""))
+      .map((row) => row.map((cell) => cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase()).join(""))
       .join("\n");
   }
 
@@ -73,6 +95,17 @@ export class Board {
       .filter((c) => c);
   }
 
+  getNeighborCells(position) {
+    return this.getNeighborPositions(position).map((pos) => this.getCell(pos));
+  }
+
+  getSameColorNeighborCells(position) {
+    const cell = this.getCell(position);
+    return this.getNeighborCells(position).filter(
+      (neighbor) => neighbor.color === cell.color
+    );
+  }
+
   getColors() {
     return new Set(
       this.data
@@ -82,9 +115,28 @@ export class Board {
     );
   }
 
+  *iterateFilledCells() {
+    for (const cell of this.iterateCells()) {
+      if (COLORS.includes(cell.color)) {
+        yield cell;
+      }
+    }
+  }
+
   *iterateCells() {
     for (const row of this.data) {
       for (const cell of row) {
+        yield cell;
+      }
+    }
+  }
+
+  /**
+   * Finds all the loose tails (not starter cells) of lines
+   */
+  *iterateTails() {
+    for (const cell of this.iterateFilledCells()) {
+      if (this.getSameColorNeighborCells(cell).length === 1) {
         yield cell;
       }
     }
@@ -106,10 +158,8 @@ export class Board {
         Array.from(this.iterateCells())
           .filter((c) => c.color === color)
           .map((cell) => {
-            const neighborPositions = this.getNeighborPositions(cell.position);
-            const neighbors = neighborPositions.map((pos) => this.getCell(pos));
-            const sameColorNeighbors = neighbors.filter(
-              (neighbor) => neighbor.color === cell.color
+            const sameColorNeighbors = this.getSameColorNeighborCells(
+              cell.position
             );
             const numSameColorNeighbors = sameColorNeighbors.length;
             return numSameColorNeighbors;
@@ -121,11 +171,14 @@ export class Board {
       );
     });
   }
-}
 
-// export function getValidMoves(board, rules, position) {
-//   const validDirections = rules.getValidDirections(board, rules, position);
-//   return validDirections.map((direction) => {
-//     return { x: position.x + direction.dx, y: position.y + direction.dy };
-//   });
-// }
+  /**
+   * Checks whether a board has gotten into an incompletable state using various heuristics.
+   * May return false positives, but must never return false negatives.
+   */
+  isValidPartial() {
+    // Check if any paths have been isolated from their other halves
+    // 1. Find the two unjoined tail ends of each current incomplete line
+    // 2. Run A* to find a path between the tails. If no path, then invalid
+  }
+}
