@@ -3,14 +3,17 @@ import { dedent } from "../utils.js";
 export default {
   type: "hex",
   start: dedent`
-    BBRRO
-    BRYYO
+    -B-RO
+    ---Y-
+    --Y-G
+    -RGO-
+    #B#-#
   `,
   solution: dedent`
+    BBRRO
     BRYYO
     BRYOG
-    BRYOG
-    BRYOG
+    BRGOG
     #B#G#
   `,
 };
