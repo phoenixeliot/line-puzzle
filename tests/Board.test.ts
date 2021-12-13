@@ -23,9 +23,7 @@ describe("Board", () => {
         oo#B
         YO--
       `;
-      expect(Board.fromString(boardString, gridRules).toString()).toEqual(
-        boardString
-      );
+      expect(Board.fromString(boardString, gridRules).toString()).toEqual(boardString);
     });
   });
   describe("getColors", () => {
@@ -178,26 +176,113 @@ describe("Board", () => {
   });
   describe("canConnect", () => {
     it("detects unconnectable paths", () => {
-      expect(
-        Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
-      ).toBe(false);
+      expect(Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(
+        false
+      );
     });
     it("detects connectable paths", () => {
-      expect(
-        Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
-      ).toBe(true);
+      expect(Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(
+        true
+      );
     });
   });
   describe("getOpenAreas", () => {
     it("finds a trivial open area", () => {
-      const openAreas = Board.fromString(dedent`
-        --
-        --
-      `, gridRules).getOpenAreas();
+      const openAreas = Board.fromString(
+        dedent`
+          --
+          --
+        `,
+        gridRules
+      ).getOpenAreas();
       expect(openAreas.length).toBe(1);
       expect(openAreas[0].perimeter.length).toBe(4);
-    })
+    });
+    it("finds a tight open area", () => {
+      const openAreas = Board.fromString(
+        dedent`
+          ###
+          #-#
+          ###
+        `,
+        gridRules
+      ).getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].perimeter.length).toBe(1);
+    });
+    it("handles thin channels", () => {
+      const openAreas = Board.fromString(
+        dedent`
+          ##-#
+          ----
+          ##-#
+        `,
+        gridRules
+      ).getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].perimeter.length).toBe(10);
+    });
+
+    it("includes tails", () => {
+      const openAreas = Board.fromString(
+        dedent`
+        --Y
+        --y
+        ---
+        ---
+      `,
+        gridRules
+      ).getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].perimeter.length).toBe(10);
+    });
+    it("includes tails and isolated endpoints", () => {
+      const board = Board.fromString(
+        dedent`
+        #Yy-
+        BB--
+        #Oo-
+      `,
+        gridRules
+      );
+      const openAreas = board.getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].perimeter.length).toBe(6);
+    });
+    it("includes tails but not line segment endpoints", () => {
+      const board = Board.fromString(
+        dedent`
+        #Yy-
+        BB--
+        #Oo-
+      `,
+        gridRules
+      );
+      const openAreas = board.getOpenAreas();
+      expect(openAreas.length).toBe(1);
+      expect(openAreas[0].perimeter.length).toBe(6);
+    });
+  });
+  describe("getEdgeColorOrdering", () => {
   })
+  describe("simplifyEdgeColorOrdering", () => {
+    it("does nothing to knots", () => {
+      const board = new Board();
+      expect(board.simplifyEdgeColorOrdering(["B", "Y", "B", "Y"])).toEqual(["B", "Y", "B", "Y"]);
+    });
+    it("collapses singles", () => {
+      const board = new Board();
+      expect(board.simplifyEdgeColorOrdering(["Y", "B", "R"])).toEqual([]);
+    });
+    it("collapses pairs", () => {
+      const board = new Board();
+      expect(board.simplifyEdgeColorOrdering(["Y", "B", "B", "Y"])).toEqual([]);
+    });
+    it("collapses singles and pairs combined", () => {
+      const board = new Board();
+      expect(board.simplifyEdgeColorOrdering(["Y", "B", "R", "B", "G", "Y"])).toEqual([]);
+    });
+  });
   describe("isValidPartial", () => {
     it("rejects isolated endpoints", () => {
       const boardString = dedent`
@@ -205,9 +290,7 @@ describe("Board", () => {
         BbY
         OYy
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        false
-      );
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("rejects separated sides", () => {
       const boardString = dedent`
@@ -215,20 +298,16 @@ describe("Board", () => {
         --y--
         O-Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        false
-      );
-    })
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
     it("accepts grids with items on same side of a separation", () => {
       const boardString = dedent`
         O-Y--
         --y--
         O-Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        true
-      );
-    })
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+    });
     it("accepts a board with open space", () => {
       const boardString = dedent`
         O-B
@@ -236,29 +315,24 @@ describe("Board", () => {
         OB-
         Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        true
-      );
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
     });
-    it("rejects a board knotted endpoints", () => {
+    it("rejects a board with knotted endpoints", () => {
       const boardString = dedent`
         B-Y
         ---
         Y-B
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        false
-      );
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("rejects a board with knotted tails", () => {
       const boardString = dedent`
-        ByY
-        b-b
-        YyB
+        B-yY
+        b---
+        ---b
+        Yy-B
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(
-        false
-      );
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
   });
 });

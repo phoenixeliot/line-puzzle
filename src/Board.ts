@@ -2,12 +2,7 @@ import isEqual from "lodash/isEqual";
 import { Area } from "./Area";
 import { Cell } from "./Cell";
 import { SerializedSet } from "./SerializedSet";
-
-export const WALL = "#";
-export const ENDPOINT_COLORS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-export const PATH_COLORS = "abcdefghijklmnopqrstuvwxyz";
-export const COLORS = ENDPOINT_COLORS + PATH_COLORS;
-export const EMPTY = "-";
+import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./contants";
 
 export function getNextClockwiseDirection(direction, directions) {
   const index = directions.findIndex(isEqual.bind(null, direction));
@@ -78,7 +73,11 @@ export class Board {
 
   toString() {
     return this.data
-      .map((row) => row.map((cell) => (cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase())).join(""))
+      .map((row) =>
+        row
+          .map((cell) => (cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase()))
+          .join("")
+      )
       .join("\n");
   }
 
@@ -164,7 +163,9 @@ export class Board {
 
   isComplete() {
     // Make sure all cells are filled
-    if (!this.data.every((row, y) => row.every((cell, x) => (WALL + COLORS).includes(cell.color)))) {
+    if (
+      !this.data.every((row, y) => row.every((cell, x) => (WALL + COLORS).includes(cell.color)))
+    ) {
       return false;
     }
     // Make sure every color has a path along itself to all other cells of that color
@@ -218,11 +219,13 @@ export class Board {
   getOpenAreas(): Array<Area> {
     // find the open areas
     const areas = [];
-    const remainingPositions = new SerializedSet(Array.from(this.iterateCells()).map((cell) => cell.position));
+    const remainingPositions = new SerializedSet(
+      Array.from(this.iterateCells()).map((cell) => cell.position)
+    );
     while (remainingPositions.size > 0) {
       const cell = this.getCell(remainingPositions.getOne());
       // either:
-      // 1. cell is empty or a tail
+      // cell is empty or a tail
       //   -> start an area there, explore it to completion
       console.log(cell);
       if (EMPTY.includes(cell.color) || cell.isTail()) {
@@ -232,22 +235,43 @@ export class Board {
           remainingPositions.delete(position);
         }
       } else {
-        // 2. cell is part of a wall
+        // cell is part of a wall or line segment
         //   -> ignore it, remove from remainingCells
         remainingPositions.delete(cell.position);
       }
-      debugger
-      // 3. cell is part of a line segment
-      //   -> ignore it, remove from remainingCells
     }
     return areas;
   }
 
-  getEdgeColorOrdering(perimeter: Array<Position>) {
-    // identify the open spaces
-    // for each open space, find an edge cell (space next to a line, or tail of a line, or a start cell)
-    // with an edge cell, trace the edge using clockwise moves and record all of those cells
-    // given the list of edge cells, get the order of all colored
+  getEdgeColorOrdering(perimeter: Array<Position>): Array<string> {
+    // given the list of edge cells, get the order of all colors on the edge
+    return perimeter
+      .map((pos) => this.getCell(pos).color)
+      .filter((color) => COLORS.includes(color));
+  }
+
+  simplifyEdgeColorOrdering(colorOrdering: Array<string>): Array<string> {
+    while (colorOrdering.length) {
+      let madeChanges = false;
+      for (let index = 0; index < colorOrdering.length; index++) {
+        const currentColor = colorOrdering[index];
+        const nextColor = colorOrdering[(index+1) % colorOrdering.length];
+        if (colorOrdering.filter((color) => color === currentColor).length === 1) {
+          colorOrdering.splice(index, 1);
+          madeChanges = true;
+          break;
+        }
+        if (currentColor == nextColor) {
+          colorOrdering.splice(index, 2);
+          madeChanges = true;
+          break;
+        }
+      }
+      if (!madeChanges) {
+        break
+      }
+    }
+    return colorOrdering;
   }
 
   /**
@@ -267,7 +291,12 @@ export class Board {
     if (!hasPathBetweenTails) return false;
 
     // Check for unresolvable tangles (eg endpoints on border that go RBRB around the perimeter)
-    // TODO
+    const simplifiedColorOrderings = this.getOpenAreas().map((area) =>
+      this.simplifyEdgeColorOrdering(this.getEdgeColorOrdering(area.perimeter))
+    );
+    if (simplifiedColorOrderings.some((ordering) => ordering.length > 0)) {
+      return false
+    }
 
     return true;
   }

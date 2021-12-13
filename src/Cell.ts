@@ -1,4 +1,5 @@
-import { Position, Board, EMPTY } from "./Board";
+import { Position, Board } from "./Board";
+import { COLORS, EMPTY } from "./contants";
 
 /*
 Terminology:
@@ -6,6 +7,7 @@ Endpoint - The final cell of a line, generally given as the only filled cells in
 Tail - The incomplete end of a line that hasn't connected to another endpoint yet. The other end is the starting endpoint.
 Line segment - A cell connecting a tail and endpoint (or two endpoints, if it's completed)
 Wall - An unusable cell on the board; an obstacle
+Active cell - One that can still make connections. Empty, or a tail.
 */
 
 export class Cell {
@@ -23,18 +25,21 @@ export class Cell {
     Object.defineProperty(this, "board", {
       enumerable: false,
       writable: true,
-      value: board
+      value: board,
     });
   }
 
   isTail() {
+    if (!COLORS.includes(this.color)) {
+      return false;
+    }
     const numSameColorNeighbors = this.board.getSameColorNeighborCells(this.position).length;
-    if (numSameColorNeighbors === 0) {
-      return true;
-    }
-    if (this.board.getSameColorNeighborCells(this.position).length === 1 && !this.isEndpoint) {
-      return true;
-    }
+    return (
+      // If it's a lone endpoint with no line segments attached
+      numSameColorNeighbors === 0 ||
+      // Or it's a line segment with only one connection
+      (this.board.getSameColorNeighborCells(this.position).length === 1 && !this.isEndpoint)
+    );
   }
 
   getNeighbors() {

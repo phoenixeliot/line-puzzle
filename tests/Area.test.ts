@@ -38,12 +38,21 @@ describe("getClockwiseDirectionsStartingWith", () => {
 
 describe("Area", () => {
   describe("fromCell", () => {
+    it("throws an error for invalid starting cell", () => {
+      const board = Board.fromString(dedent`
+        #-
+        --
+      `, gridRules);
+      expect(() => {
+        const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      }).toThrowError();
+    });
     it("fills a trivial area", () => {
       const board = Board.fromString(
         dedent`
-        --
-        --
-      `,
+          --
+          --
+        `,
         gridRules
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
@@ -52,9 +61,9 @@ describe("Area", () => {
     it("fills an area with a completed line", () => {
       const board = Board.fromString(
         dedent`
-        --B
-        --B
-      `,
+          --B
+          --B
+        `,
         gridRules
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
@@ -63,9 +72,9 @@ describe("Area", () => {
     it("fills an area with single-wide side channel and double-counts that channel", () => {
       const board = Board.fromString(
         dedent`
-        --BB
-        ----
-      `,
+          --BB
+          ----
+        `,
         gridRules
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
@@ -74,10 +83,10 @@ describe("Area", () => {
     it("fills an area with a hole", () => {
       const board = Board.fromString(
         dedent`
-        ---
-        -#-
-        ---
-      `,
+          ---
+          -#-
+          ---
+        `,
         gridRules
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
@@ -86,10 +95,10 @@ describe("Area", () => {
     it("fills an area with a hole and innards", () => {
       const board = Board.fromString(
         dedent`
-        -----
-        --#--
-        -----
-      `,
+          -----
+          --#--
+          -----
+        `,
         gridRules
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
