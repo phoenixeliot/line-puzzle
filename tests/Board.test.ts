@@ -1,6 +1,6 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
 import { dedent } from "./utils";
-import { Board } from "../src/board";
+import { Board } from "../src/Board";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
 
@@ -195,7 +195,7 @@ describe("Board", () => {
         --
       `, gridRules).getOpenAreas();
       expect(openAreas.length).toBe(1);
-      expect(openAreas[0].length).toBe(4);
+      expect(openAreas[0].perimeter.length).toBe(4);
     })
   })
   describe("isValidPartial", () => {

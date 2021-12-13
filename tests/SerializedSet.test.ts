@@ -1,4 +1,4 @@
-import { SerializedSet } from "../src/board";
+import { SerializedSet } from "../src/SerializedSet";
 
 describe("SerializedSet", () => {
   it("iterates items correctly", () => {

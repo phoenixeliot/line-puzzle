@@ -1,6 +1,7 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
 import { dedent } from "./utils";
-import { Area, Board, getClockwiseDirectionsStartingWith, getNextClockwiseDirection } from "../src/board";
+import { Board, getClockwiseDirectionsStartingWith, getNextClockwiseDirection } from "../src/Board";
+import { Area } from "../src/Area";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
 

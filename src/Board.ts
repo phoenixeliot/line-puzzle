@@ -1,60 +1,13 @@
-import { isEqual } from "lodash";
+import isEqual from "lodash/isEqual";
+import { Area } from "./Area";
+import { Cell } from "./Cell";
+import { SerializedSet } from "./SerializedSet";
 
 export const WALL = "#";
 export const ENDPOINT_COLORS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export const PATH_COLORS = "abcdefghijklmnopqrstuvwxyz";
 export const COLORS = ENDPOINT_COLORS + PATH_COLORS;
 export const EMPTY = "-";
-
-/*
-Terminology:
-Endpoint - The final cell of a line, generally given as the only filled cells in the start of a puzzle
-Tail - The incomplete end of a line that hasn't connected to another endpoint yet. The other end is the starting endpoint.
-Line segment - A cell connecting a tail and endpoint (or two endpoints, if it's completed)
-Wall - An unusable cell on the board; an obstacle
-*/
-
-export class Cell {
-  color: string;
-  position: Position;
-  isEndpoint: boolean;
-  board: Board;
-
-  constructor({ color, position, isEndpoint, board }) {
-    this.color = color;
-    this.position = position;
-    this.isEndpoint = isEndpoint;
-
-    // Set Board separately so it doesn't get enumerated by toJSON
-    Object.defineProperty(this, "board", {
-      enumerable: false,
-      writable: true,
-      value: board,
-    });
-  }
-
-  isTail() {
-    const numSameColorNeighbors = this.board.getSameColorNeighborCells(this.position).length;
-    if (numSameColorNeighbors === 0) {
-      return true;
-    }
-    if (this.board.getSameColorNeighborCells(this.position).length === 1 && !this.isEndpoint) {
-      return true;
-    }
-  }
-
-  getNeighbors() {
-    // TODO: Move this completely in here
-    return this.board.getNeighborCells(this.position);
-  }
-
-  /**
-   * I may need to rename this. "Active" means cell is either a tail or empty; it can still be connected to by neighboring cells.
-   */
-  isActive() {
-    return this.isTail() || EMPTY.includes(this.color);
-  }
-}
 
 export function getNextClockwiseDirection(direction, directions) {
   const index = directions.findIndex(isEqual.bind(null, direction));
@@ -72,167 +25,7 @@ export function getClockwiseDirectionsStartingWith(direction, directions) {
   return directions.slice(startIndex).concat(directions.slice(0, startIndex));
 }
 
-/**
- * Represents an open area of a board, including empty spaces and tails, but not including walls or line segments
- */
-export class Area {
-  // TODO: Clean up any of these I don't actually need/use
-  cells: Array<Position>;
-  perimeter: Array<Position>; // Clockwise ordered cells marking the outer edge of the area
-
-  constructor({ cells, perimeter }) {
-    this.cells = cells;
-    this.perimeter = perimeter;
-  }
-
-  static fromCell(cell: Cell) {
-    const board = cell.board;
-    if (!cell.isActive()) {
-      throw Error("Invalid starting cell for finding an area (cell is not active)" + JSON.stringify(cell));
-    }
-
-    // Flood-fill algorithm
-    const filledPositions = new SerializedSet<Position>();
-    const growingEdge = new SerializedSet<Position>([cell.position]);
-    while (growingEdge.size > 0) {
-      for (const newPos of growingEdge) {
-        const unexploredNeighbors = cell.board.getNeighborCells(newPos).filter((neighborCell) => {
-          return (
-            neighborCell.isActive() &&
-            !filledPositions.has(neighborCell.position) &&
-            !growingEdge.has(neighborCell.position)
-          );
-        });
-        unexploredNeighbors.forEach((cell) => growingEdge.add(cell.position));
-        filledPositions.add(newPos);
-        growingEdge.delete(newPos);
-      }
-    }
-
-    // Get the perimeter from the filled area (all cells that aren't surrounded by other cells in the area)
-    const unorderedPerimeter = new SerializedSet(
-      Array.from(filledPositions).filter((position) => {
-        return !cell.board.getNeighborCells(position).every((neighbor) => {
-          filledPositions.has(neighbor.position);
-        });
-      })
-    );
-
-    const perimeterStart = unorderedPerimeter.getOne();
-    let nextNeighbor;
-    let nextStartDirection;
-    {
-      // The clockwise oriented one is the one that, if you turn one more step clockwise,
-      // you run into something in the body, or the other perimeter connection
-      const neighbors = board.getNeighborPositions(perimeterStart);
-      const neighborPerimeterCells = neighbors.filter((neighbor) => unorderedPerimeter.has(neighbor));
-      if (neighborPerimeterCells.length !== 2) throw new Error("Something went wrong in perimeter calculation");
-
-      const [firstNeighbor, secondNeighbor] = neighborPerimeterCells;
-      const directionToNeighbor = {
-        dx: firstNeighbor.x - perimeterStart.x,
-        dy: firstNeighbor.y - perimeterStart.y,
-      };
-
-      const directions = board.rules.getNeighborDirections(firstNeighbor);
-      const directionIndex = directions.findIndex((d) => isEqual(d, directionToNeighbor));
-      const nextClockwiseDirection = directions[directionIndex % directions.length];
-
-      const positionInNextClockwiseDirection = {
-        x: perimeterStart.x + nextClockwiseDirection.dx,
-        y: perimeterStart.y + nextClockwiseDirection.dy,
-      };
-      if (filledPositions.has(positionInNextClockwiseDirection)) {
-        nextNeighbor = firstNeighbor;
-      } else {
-        nextNeighbor = secondNeighbor;
-      }
-      // TODO: Extract into function to get next clockwise direction
-      nextStartDirection = getNextClockwiseDirection(
-        {
-          // 1 CW turn from facing directly back the way we just came, then search CW from there each time
-          dx: perimeterStart.x - nextNeighbor.x,
-          dy: perimeterStart.y - nextNeighbor.y,
-        },
-        directions
-      );
-    }
-
-    // Gather every perimeter position into a clockwise ordered list
-    const clockwisePerimeter = [perimeterStart, nextNeighbor];
-    while (true) {
-      let foundNext = false;
-      const rotatedDirections = getClockwiseDirectionsStartingWith(
-        nextStartDirection,
-        board.rules.getNeighborDirections(nextNeighbor)
-      );
-      for (const direction of rotatedDirections) {
-        const newPos = {
-          x: nextNeighbor.x + direction.dx,
-          y: nextNeighbor.y + direction.dy,
-        };
-        if (unorderedPerimeter.has(newPos)) {
-          nextNeighbor = newPos;
-          // 1 CW turn from facing directly back the way we just came, then search CW from there each time
-          nextStartDirection = getNextClockwiseDirection({ dx: -direction.dx, dy: -direction.dy }, rotatedDirections);
-          foundNext = true;
-          break;
-        }
-      }
-      if (!foundNext) {
-        throw new Error("Didn't find next item on perimeter path — this should not happen.")
-      }
-      if (isEqual(nextNeighbor, perimeterStart)) {
-        break;
-      }
-      clockwisePerimeter.push(nextNeighbor);
-    }
-
-    return new Area({
-      cells: filledPositions,
-      perimeter: clockwisePerimeter,
-    });
-  }
-}
-
-export class SerializedSet<T> extends Set {
-  constructor(items: Array<T> = []) {
-    super(items);
-  }
-  has(item: T) {
-    return super.has(JSON.stringify(item));
-  }
-  /**
-   * get a random single item from the set
-   */
-  getOne(): T {
-    if (this.size === 0) {
-      throw Error("Can't getOne from empty SerializedSet");
-    }
-    return this.values().next().value as T;
-  }
-  add(item: T) {
-    return super.add(JSON.stringify(item));
-  }
-  delete(item: T) {
-    return super.delete(JSON.stringify(item));
-  }
-  [Symbol.iterator]() {
-    return this.values();
-  }
-  *values(): Generator<T, void, unknown> {
-    for (const item of super.values()) {
-      yield JSON.parse(item);
-    }
-  }
-  forEach(fn) {
-    return super.forEach((item) => {
-      fn(JSON.parse(item));
-    });
-  }
-}
-
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }
@@ -422,27 +215,35 @@ export class Board {
     return false;
   }
 
-  getOpenAreas(): Array<Array<Position>> {
+  getOpenAreas(): Array<Area> {
     // find the open areas
     const areas = [];
-    const remainingCells = new SerializedSet(Array.from(this.iterateCells()));
-    while (remainingCells.size > 0) {
-      remainingCells.forEach((cell) => {
-        // either:
-        // 1. cell is empty or a tail
-        //   -> start an area there, explore it to completion
-        if (WALL.includes(cell.color) || cell.isTail()) {
+    const remainingPositions = new SerializedSet(Array.from(this.iterateCells()).map((cell) => cell.position));
+    while (remainingPositions.size > 0) {
+      const cell = this.getCell(remainingPositions.getOne());
+      // either:
+      // 1. cell is empty or a tail
+      //   -> start an area there, explore it to completion
+      console.log(cell);
+      if (EMPTY.includes(cell.color) || cell.isTail()) {
+        const area = Area.fromCell(cell);
+        areas.push(area);
+        for (const position of area.positions) {
+          remainingPositions.delete(position);
         }
+      } else {
         // 2. cell is part of a wall
         //   -> ignore it, remove from remainingCells
-        // 3. cell is part of a line segment
-        //   -> ignore it, remove from remainingCells
-      });
+        remainingPositions.delete(cell.position);
+      }
+      debugger
+      // 3. cell is part of a line segment
+      //   -> ignore it, remove from remainingCells
     }
     return areas;
   }
 
-  getEdgeColorOrdering(startPos: Position) {
+  getEdgeColorOrdering(perimeter: Array<Position>) {
     // identify the open spaces
     // for each open space, find an edge cell (space next to a line, or tail of a line, or a start cell)
     // with an edge cell, trace the edge using clockwise moves and record all of those cells
@@ -456,12 +257,18 @@ export class Board {
   isValidPartial() {
     // Check if any paths have been isolated from their other halves
     // 1. Find the two unjoined tail ends of each current incomplete line
-    return Array.from(this.iterateTails()).every((tailCell1) => {
+    const hasPathBetweenTails = Array.from(this.iterateTails()).every((tailCell1) => {
       const tailCell2 = Array.from(this.iterateTails()).find(
         (cell) => cell.color === tailCell1.color && cell !== tailCell1
       );
+      // 2. Run A* to find a path between the tails. If no path, then invalid
       return this.canConnect(tailCell1.position, tailCell2.position);
     });
-    // 2. Run A* to find a path between the tails. If no path, then invalid
+    if (!hasPathBetweenTails) return false;
+
+    // Check for unresolvable tangles (eg endpoints on border that go RBRB around the perimeter)
+    // TODO
+
+    return true;
   }
 }
