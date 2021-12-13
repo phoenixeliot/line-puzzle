@@ -335,4 +335,68 @@ describe("Board", () => {
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
   });
+  describe("solve", () => {
+    it("solves a trivial board", () => {
+      const board = Board.fromString(dedent`
+        B-B
+      `, gridRules)
+      expect(board.solve().toString()).toEqual(dedent`
+        BbB
+      `)
+    })
+    it("solves a board with two colors", () => {
+      const board = Board.fromString(dedent`
+        B-BY
+        Y---
+      `, gridRules)
+      expect(board.solve().toString()).toEqual(dedent`
+        BbBY
+        Yyyy
+      `)
+    })
+    it("solves a board with a wrap around", () => {
+      const board = Board.fromString(dedent`
+        YBY
+        ---
+        -B-
+        ---
+      `, gridRules)
+      expect(board.solve().toString()).toEqual(dedent`
+        YBY
+        yby
+        yBy
+        yyy
+      `)
+    })
+    it("solves a board with a double wrap around", () => {
+      const board = Board.fromString(dedent`
+        YB---
+        ---R-
+        -B---
+        ---RY
+      `, gridRules)
+      expect(board.solve().toString()).toEqual(dedent`
+        YByyy
+        ybyRy
+        yByry
+        yyyRY
+      `)
+    })
+    it("solves a board with an unintuitive long outer edge", () => {
+      const board = Board.fromString(dedent`
+        Y---Y
+        -BRB-
+        -----
+        #-R-#
+        #---#
+      `, gridRules)
+      expect(board.solve().toString()).toEqual(dedent`
+        YbbbY
+        yBRBy
+        yyryy
+        #yRy#
+        #yyy#
+      `)
+    })
+  })
 });

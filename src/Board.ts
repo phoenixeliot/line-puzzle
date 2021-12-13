@@ -300,4 +300,8 @@ export class Board {
 
     return true;
   }
+
+  solve(): Board {
+    return this;
+  }
 }
