@@ -8,14 +8,14 @@ import { getNeighborDirections } from "./gridRules";
  * Represents an open area of a board, including empty spaces and tails, but not including walls or line segments
  */
 export class Area {
-  positions: Array<Position>;
+  positions: SerializedSet<Position>;
   perimeter: Array<Position>; // Clockwise ordered cells marking the outer edge of the area
 
   constructor({
     positions,
     perimeter,
   }: {
-    positions: Array<Position>;
+    positions: SerializedSet<Position>;
     perimeter: Array<Position>;
   }) {
     this.positions = positions;
@@ -51,7 +51,7 @@ export class Area {
     // Special case: A single empty cell
     if (filledPositions.size == 1) {
       return new Area({
-        positions: Array.from(filledPositions),
+        positions: filledPositions,
         perimeter: Array.from(filledPositions),
       });
     }

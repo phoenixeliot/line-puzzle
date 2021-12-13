@@ -1,6 +1,24 @@
 import { SerializedSet } from "../src/SerializedSet";
 
 describe("SerializedSet", () => {
+  describe("getOne", () => {
+    it("throws an error if the set is empty", () => {
+      const set = new SerializedSet();
+      expect(() => {
+        set.getOne();
+      }).toThrowError();
+    });
+  });
+  describe("forEach", () => {
+    it("calls the callback for each item", () => {
+      const set = new SerializedSet([1, 2, 3]);
+      const fn = jest.fn();
+      set.forEach(fn);
+      expect(fn).toHaveBeenCalledWith(1);
+      expect(fn).toHaveBeenCalledWith(2);
+      expect(fn).toHaveBeenCalledWith(3);
+    });
+  });
   it("iterates items correctly", () => {
     const set = new SerializedSet();
     set.add("foo");

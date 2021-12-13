@@ -264,7 +264,11 @@ describe("Board", () => {
     });
   });
   describe("getEdgeColorOrdering", () => {
-  })
+    it.todo("gets the colors of a closed-off area");
+    it.todo("gets the colors of just endpoints");
+    it.todo("gets the colors of just tails");
+    it.todo("gets the colors of tails and endpoints");
+  });
   describe("simplifyEdgeColorOrdering", () => {
     it("does nothing to knots", () => {
       const board = new Board();
@@ -302,9 +306,9 @@ describe("Board", () => {
     });
     it("accepts grids with items on same side of a separation", () => {
       const boardString = dedent`
-        O-Y--
+        O-Y-G
         --y--
-        O-Y--
+        O-Y-G
       `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
     });
@@ -334,69 +338,270 @@ describe("Board", () => {
       `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
+    it("rejects a board with a trapped end", () => {
+      const boardString = dedent`
+        B-Y
+        -bB
+        -b#
+        Ybb
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
   });
   describe("solve", () => {
-    it("solves a trivial board", () => {
-      const board = Board.fromString(dedent`
-        B-B
-      `, gridRules)
-      expect(board.solve().toString()).toEqual(dedent`
+    it("solves a trivial board", async () => {
+      const board = Board.fromString(
+        dedent`
+          B-B
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
         BbB
-      `)
-    })
-    it("solves a board with two colors", () => {
-      const board = Board.fromString(dedent`
-        B-BY
-        Y---
-      `, gridRules)
-      expect(board.solve().toString()).toEqual(dedent`
-        BbBY
+      `);
+    });
+    it("solves a board with two colors", async () => {
+      const board = Board.fromString(
+        dedent`
+          Y---
+          B-BY
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
         Yyyy
-      `)
-    })
-    it("solves a board with a wrap around", () => {
-      const board = Board.fromString(dedent`
-        YBY
-        ---
-        -B-
-        ---
-      `, gridRules)
-      expect(board.solve().toString()).toEqual(dedent`
-        YBY
-        yby
-        yBy
+        BbBY
+      `);
+    });
+    it("solves a board with a wrap around", async () => {
+      const board = Board.fromString(
+        dedent`
+          ---
+          -B-
+          ---
+          YBY
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
         yyy
-      `)
-    })
-    it("solves a board with a double wrap around", () => {
-      const board = Board.fromString(dedent`
+        yBy
+        yby
+        YBY
+      `);
+    });
+    it("solves a board with a double wrap around", async () => {
+      const board = Board.fromString(
+        dedent`
         YB---
         ---R-
         -B---
         ---RY
-      `, gridRules)
-      expect(board.solve().toString()).toEqual(dedent`
+      `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
         YByyy
         ybyRy
         yByry
         yyyRY
-      `)
-    })
-    it("solves a board with an unintuitive long outer edge", () => {
-      const board = Board.fromString(dedent`
+      `);
+    });
+    it("solves a board with an unintuitive long outer edge", async () => {
+      const board = Board.fromString(
+        dedent`
         Y---Y
         -BRB-
         -----
         #-R-#
         #---#
-      `, gridRules)
-      expect(board.solve().toString()).toEqual(dedent`
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
         YbbbY
         yBRBy
         yyryy
         #yRy#
         #yyy#
-      `)
-    })
-  })
+      `);
+    });
+    it("Solves 5x5 level 5", async () => {
+      // Level 5 in Classic 5x5
+      const board = Board.fromString(
+        dedent`
+        -----
+        -GR-Y
+        ----O
+        YB-R-
+        B-GO-
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(dedent`
+      yyyyy
+      yGRrY
+      yggrO
+      YBgRo
+      BbGOo
+      `);
+    }, 1000);
+    it("Solves 5x5 level 30", async () => {
+      // Level 5 in Classic 5x5
+      const board = Board.fromString(
+        dedent`
+        B---Y
+        -----
+        -RG--
+        --B--
+        GRY--
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(dedent`
+      BbbbY
+      gggby
+      gRGby
+      grBby
+      GRYyy
+      `);
+    }, 1000);
+    it("Solves a 6x6", async () => {
+      // Level 8 in 6x6 mania
+      const board = Board.fromString(
+        dedent`
+        -----Y
+        ---RBG
+        --B---
+        --G---
+        ------
+        ----YR
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(dedent`
+      yyyyyY
+      yrrRBG
+      yrBbbg
+      yrGggg
+      yrrrrr
+      yyyyYR
+      `);
+    }, 1000);
+    it("Solves a 7x7", async () => {
+      // Level 1 in 7x7 mania
+      // P = Purple
+      // K = Pink
+      // M = Maroon
+      const board = Board.fromString(
+        dedent`
+        -------
+        BY---CG
+        OB----R
+        --Y----
+        -----C-
+        ---O-G-
+        R------
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(dedent`
+      bbbbggg
+      BYybgCG
+      OBybgcR
+      obYbgcr
+      obbbgCr
+      oooOgGr
+      Rrrrrrr
+      `);
+    }, 1000);
+    xit("Solves a 8x8", async () => {
+      // Level 1 in 8x8 mania
+      // P = Purple
+      // K = Pink
+      // M = Maroon
+      const board = Board.fromString(
+        dedent`
+        C--CY---
+        --RMK-K-
+        --B-----
+        --G-OM--
+        ----M---
+        ---R----
+        -B-G--OY
+        -------M
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(``);
+    }, 1000);
+    xit("Solves a 9x9", async () => {
+      // Level 102 in 9x9 mania
+      const board = Board.fromString(
+        dedent`
+        OG-------
+        -------O-
+        Y-C------
+        --R------
+        ----BY---
+        ------G--
+        ------R--
+        ------C--
+        --------B
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(``);
+    }, 1000);
+    xit("Solves a 10x10", async () => {
+      // Level 22 in 10x10 mania
+      // P = Purple
+      // K = Pink
+      // M = Maroon
+      const board = Board.fromString(
+        dedent`
+        ------BKCY
+        ----------
+        ----------
+        ---OP-CG--
+        ----------
+        ----PG-M--
+        ----OR----
+        ----M-R-K-
+        --------Y-
+        ---------B
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      console.log(solution.toString());
+      expect(solution.toString()).toEqual(``);
+    }, 1000);
+  });
 });

@@ -39,10 +39,13 @@ describe("getClockwiseDirectionsStartingWith", () => {
 describe("Area", () => {
   describe("fromCell", () => {
     it("throws an error for invalid starting cell", () => {
-      const board = Board.fromString(dedent`
+      const board = Board.fromString(
+        dedent`
         #-
         --
-      `, gridRules);
+      `,
+        gridRules
+      );
       expect(() => {
         const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
       }).toThrowError();
@@ -57,6 +60,30 @@ describe("Area", () => {
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(4);
+    });
+    it("fills an area with a concave start", () => {
+      const board = Board.fromString(
+        dedent`
+          ---
+          #--
+          ---
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      expect(area.perimeter.length).toEqual(10);
+    });
+    it("fills an area with trick neighbor (up is not the right direction to connect)", () => {
+      const board = Board.fromString(
+        dedent`
+          ---
+          ---
+          -#-
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      expect(area.perimeter.length).toEqual(10);
     });
     it("fills an area with a completed line", () => {
       const board = Board.fromString(

@@ -1,4 +1,5 @@
 import isEqual from "lodash/isEqual";
+import cloneDeepWith from "lodash/cloneDeepWith";
 import { Area } from "./Area";
 import { Cell } from "./Cell";
 import { SerializedSet } from "./SerializedSet";
@@ -38,7 +39,19 @@ export class Board {
   rules: Rules;
 
   // Just create the object, we initialize it later so Cells can have a reference to the Board
-  constructor() {}
+  constructor(data?: Array<Array<Cell>>, rules?: Rules) {
+    if (data && rules) {
+      this.data = cloneDeepWith(data, (value) => {
+        if (value.constructor == Board) {
+          return null;
+        }
+      });
+      this.rules = rules;
+      for (const cell of this.iterateCells()) {
+        cell.board = this;
+      }
+    }
+  }
 
   /**
    * Populate the board values after the board exists, so Cells can have a reference to the Board
@@ -91,8 +104,12 @@ export class Board {
     );
   }
 
-  getColor(position) {
+  getColor(position: Position) {
     return this.getCell(position).color;
+  }
+
+  setColor(position: Position, color: string) {
+    this.getCell(position).color = color;
   }
 
   getCell(position: Position) {
@@ -168,6 +185,10 @@ export class Board {
     ) {
       return false;
     }
+    // There should be no loose tails
+    if (Array.from(this.iterateTails()).length > 0) {
+      return false;
+    }
     // Make sure every color has a path along itself to all other cells of that color
     return Array.from(this.getColors()).every((color) => {
       // Each color should have exactly 2 cells with 1 connection to its own color each, and all the rest should have 2 connections.
@@ -180,6 +201,7 @@ export class Board {
             return numSameColorNeighbors;
           })
       );
+      // TODO: Revise or cut after adding 'no loose tails' check above which might be equivalent to the intent here
       return isEqual(counts, new Set([1, 2])) || isEqual(counts, new Set([1]));
     });
   }
@@ -255,7 +277,7 @@ export class Board {
       let madeChanges = false;
       for (let index = 0; index < colorOrdering.length; index++) {
         const currentColor = colorOrdering[index];
-        const nextColor = colorOrdering[(index+1) % colorOrdering.length];
+        const nextColor = colorOrdering[(index + 1) % colorOrdering.length];
         if (colorOrdering.filter((color) => color === currentColor).length === 1) {
           colorOrdering.splice(index, 1);
           madeChanges = true;
@@ -268,7 +290,7 @@ export class Board {
         }
       }
       if (!madeChanges) {
-        break
+        break;
       }
     }
     return colorOrdering;
@@ -291,17 +313,73 @@ export class Board {
     if (!hasPathBetweenTails) return false;
 
     // Check for unresolvable tangles (eg endpoints on border that go RBRB around the perimeter)
-    const simplifiedColorOrderings = this.getOpenAreas().map((area) =>
+    const areas = this.getOpenAreas();
+    const simplifiedColorOrderings = areas.map((area) =>
       this.simplifyEdgeColorOrdering(this.getEdgeColorOrdering(area.perimeter))
     );
     if (simplifiedColorOrderings.some((ordering) => ordering.length > 0)) {
-      return false
+      return false;
+    }
+
+    // Check for inaccessible areas (no tails reachable to fill the space)
+    if (areas.some((area) => !area.positions.some((pos) => this.getCell(pos).isTail()))) {
+      return false;
     }
 
     return true;
   }
 
-  solve(): Board {
+  async solve(copy = true, level = 0): Promise<Board> {
+    if (level > 3) {
+      return this;
+    }
+    // If board is ever not isValidPartial(), cancel the current search branch
+
+    const solvedBoard = new Board(this.data, this.rules);
+
+    // First, find moves that must be done
+    // Types:
+    // - Tail has only one empty cell next to it
+    // - Move would make a space inaccessible (handled by isValidPartial)
+    // - TODO Move along the perimeter if two of same color tail are adjacent
+    let madeChanges = true;
+    while (madeChanges) {
+      madeChanges = false;
+      for (const tail of this.iterateTails()) {
+        const neighbors = tail.getNeighbors();
+        const emptyNeighbors = neighbors.filter((neighbor) => neighbor.isEmpty());
+        if (emptyNeighbors.length === 1) {
+          const emptyNeighbor = emptyNeighbors[0];
+          this.setColor(emptyNeighbor.position, tail.color);
+          madeChanges = true;
+        }
+      }
+    }
+
+    // When ambiguous, use A*
+    // Heuristics:
+    // - TODO Move along the perimeter if touching the inactive edge
+    // - TODO Move toward the same color tail
+    for (const tail of this.iterateTails()) {
+      for (const emptyCell of tail.getNeighbors().filter((n) => n.isEmpty())) {
+        const hypothesisBoard = new Board(this.data, this.rules);
+        hypothesisBoard.setColor(emptyCell.position, tail.color);
+        console.log(`at depth ${level}:\n${hypothesisBoard.toString()}`);
+
+        const solved = await hypothesisBoard.solve(false, level + 1); // don't re-duplicate since we just duplicated
+        if (solved.isComplete()) {
+          console.log(`Success after ${level} levels of recursion`);
+          return solved;
+          // return new Promise((resolve) => {
+          //   setTimeout(() => {
+          //     resolve(solved);
+          //   }, 0);
+          // });
+        }
+      }
+    }
+
+    // TODO: Try out my "known good visual patterns" heuristic idea
     return this;
   }
 }

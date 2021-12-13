@@ -34,4 +34,7 @@ export class SerializedSet<T> extends Set {
       fn(JSON.parse(item));
     });
   }
+  some(fn): boolean {
+    return Array.from(this).some(fn)
+  }
 }

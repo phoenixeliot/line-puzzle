@@ -42,6 +42,10 @@ export class Cell {
     );
   }
 
+  isEmpty() {
+    return EMPTY.includes(this.color);
+  }
+
   getNeighbors() {
     // TODO: Move this completely in here
     return this.board.getNeighborCells(this.position);
