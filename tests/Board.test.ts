@@ -190,7 +190,7 @@ describe("Board", () => {
   });
   describe("getOpenAreas", () => {
     it("finds a trivial open area", () => {
-      const openAreas = Board.fromString(dedupe`
+      const openAreas = Board.fromString(dedent`
         --
         --
       `, gridRules).getOpenAreas();
