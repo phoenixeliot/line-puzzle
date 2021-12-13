@@ -250,7 +250,7 @@ describe("Board", () => {
         false
       );
     });
-    it("rejects a board knotted tails", () => {
+    it("rejects a board with knotted tails", () => {
       const boardString = dedent`
         ByY
         b-b

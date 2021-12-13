@@ -24,7 +24,13 @@ export class Cell {
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
-    this.board = board;
+
+    // Set Board separately so it doesn't get enumerated by toJSON
+    Object.defineProperty(this, "board", {
+      enumerable: false,
+      writable: true,
+      value: board,
+    });
   }
 
   isTail() {
@@ -73,12 +79,10 @@ export class Area {
   // TODO: Clean up any of these I don't actually need/use
   cells: Array<Position>;
   perimeter: Array<Position>; // Clockwise ordered cells marking the outer edge of the area
-  body: Array<Position>;
 
-  constructor({ cells, perimeter, body }) {
+  constructor({ cells, perimeter }) {
     this.cells = cells;
     this.perimeter = perimeter;
-    this.body = body;
   }
 
   static fromCell(cell: Cell) {
@@ -176,7 +180,7 @@ export class Area {
         }
       }
       if (!foundNext) {
-        debugger;
+        throw new Error("Didn't find next item on perimeter path — this should not happen.")
       }
       if (isEqual(nextNeighbor, perimeterStart)) {
         break;
@@ -187,7 +191,6 @@ export class Area {
     return new Area({
       cells: filledPositions,
       perimeter: clockwisePerimeter,
-      body: [],
     });
   }
 }
@@ -457,7 +460,6 @@ export class Board {
       const tailCell2 = Array.from(this.iterateTails()).find(
         (cell) => cell.color === tailCell1.color && cell !== tailCell1
       );
-      debugger;
       return this.canConnect(tailCell1.position, tailCell2.position);
     });
     // 2. Run A* to find a path between the tails. If no path, then invalid
