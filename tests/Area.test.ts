@@ -73,6 +73,19 @@ describe("Area", () => {
       const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
       expect(area.perimeter.length).toEqual(10);
     });
+    it("fills an area with a very concave start", () => {
+      const board = Board.fromString(
+        dedent`
+          ---
+          ---
+          #--
+          ---
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      expect(area.perimeter.length).toEqual(12);
+    });
     it("fills an area with trick neighbor (up is not the right direction to connect)", () => {
       const board = Board.fromString(
         dedent`

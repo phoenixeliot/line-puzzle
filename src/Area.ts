@@ -77,6 +77,7 @@ export class Area {
         unorderedPerimeter.has(neighbor)
       );
       // In most cases it will be 2, but it can be 1 along single-width channels (since the forward-and-back item isn't double counted)
+      // TODO: Rethink this logic. Neighboring perimeter cells may be on the 'other side' of a 2-wide part, resulting in up to 4 on a grid.
       if (!new Set([1, 2]).has(neighborPerimeterCells.length)) {
         throw new Error(
           `Something went wrong in perimeter calculation (neighborPerimeterCells.length is ${neighborPerimeterCells.length})`
