@@ -1,4 +1,3 @@
-
 export class SerializedSet<T> extends Set {
   constructor(items: Array<T> = []) {
     super(items);
@@ -9,32 +8,61 @@ export class SerializedSet<T> extends Set {
   /**
    * get a random single item from the set
    */
-  getOne(): T {
-    if (this.size === 0) {
+  serializeItem(item: T): string {
+    return JSON.stringify(item);
+  }
+  deserializeItem(string: string): T {
+    return JSON.parse(string);
+  }
+  *filter(filterFn: (v: T) => boolean = () => true): Generator<T, void, unknown> {
+    const values = this.values();
+    let next;
+    while ((next = values.next().value)) {
+      if (filterFn(next)) {
+        yield next;
+      }
+    }
+  }
+  getOne(filterFn?: (v: T) => boolean): T {
+    let next;
+    if (filterFn) {
+      next = this.filter(filterFn).next().value;
+    } else {
+      next = this.values().next().value;
+    }
+    if (!next) {
       throw Error("Can't getOne from empty SerializedSet");
     }
-    return this.values().next().value as T;
+    return next;
   }
   add(item: T) {
-    return super.add(JSON.stringify(item));
+    return super.add(this.serializeItem(item));
   }
   delete(item: T) {
-    return super.delete(JSON.stringify(item));
+    return super.delete(this.serializeItem(item));
   }
   [Symbol.iterator]() {
     return this.values();
   }
   *values(): Generator<T, void, unknown> {
-    for (const item of super.values()) {
-      yield JSON.parse(item);
+    for (const string of super.values()) {
+      yield this.deserializeItem(string);
     }
   }
   forEach(fn) {
     return super.forEach((item) => {
-      fn(JSON.parse(item));
+      fn(this.deserializeItem(item));
     });
   }
   some(fn): boolean {
-    return Array.from(this).some(fn)
+    return Array.from(this).some(fn);
+  }
+  min(compare: (a: T, b: T) => T): T {
+    const items = Array.from(this);
+    let currentMin = items.pop();
+    for (const item of items) {
+      currentMin = compare(currentMin, item);
+    }
+    return currentMin;
   }
 }

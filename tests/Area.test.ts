@@ -18,6 +18,45 @@ describe("getNextClockwiseDirection", () => {
   });
 });
 
+describe("toString", () => {
+  it("prints cells in the area", () => {
+    const board = Board.fromString(
+      dedent`
+      -B-
+      -bB
+      ---
+      `,
+      gridRules
+    );
+    const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+    expect(area.toString(board)).toEqual(dedent`
+    @--
+    @--
+    @@@
+    `);
+  });
+  it("prints cells in the area", () => {
+    const board = Board.fromString(
+      dedent`
+      ---B
+      ---B
+      ----
+      ----
+      ----
+      `,
+      gridRules
+    );
+    const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+    expect(area.toString(board)).toEqual(dedent`
+    @@@-
+    @^@-
+    @^@@
+    @^^@
+    @@@@
+    `);
+  });
+});
+
 describe("getClockwiseDirectionsStartingWith", () => {
   it("returns a list with the given direction first", () => {
     expect(
@@ -143,6 +182,29 @@ describe("Area", () => {
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(12);
+    });
+    it("doesn't explore through endpoint barriers", () => {
+      const board = Board.fromString(
+        dedent`
+        -Y
+        B-
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      expect(area.positions.size).toBe(3);
+    });
+    it("doesn't explore through tail barriers", () => {
+      const board = Board.fromString(
+        dedent`
+        -Y
+        b-
+        B-
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      expect(area.positions.size).toBe(3);
     });
   });
 });

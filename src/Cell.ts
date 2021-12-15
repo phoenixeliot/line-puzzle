@@ -42,6 +42,10 @@ export class Cell {
     );
   }
 
+  hasLine() {
+    return COLORS.includes(this.color);
+  }
+
   isEmpty() {
     return EMPTY.includes(this.color);
   }

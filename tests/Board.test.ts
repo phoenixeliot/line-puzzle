@@ -1,5 +1,6 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
 import { dedent } from "./utils";
+import { Area } from "../src/Area";
 import { Board } from "../src/Board";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
@@ -269,173 +270,321 @@ describe("Board", () => {
     it.todo("gets the colors of just tails");
     it.todo("gets the colors of tails and endpoints");
   });
-  describe("simplifyEdgeColorOrdering", () => {
+  describe("simplifyEdgeColorOrderings", () => {
     it("does nothing to knots", () => {
       const board = new Board();
-      expect(board.simplifyEdgeColorOrdering(["B", "Y", "B", "Y"])).toEqual(["B", "Y", "B", "Y"]);
+      expect(board.simplifyEdgeColorOrderings([["B", "Y", "B", "Y"]])).toEqual([
+        ["B", "Y", "B", "Y"],
+      ]);
     });
     it("collapses singles", () => {
       const board = new Board();
-      expect(board.simplifyEdgeColorOrdering(["Y", "B", "R"])).toEqual([]);
+      expect(board.simplifyEdgeColorOrderings([["Y", "B", "R"]])).toEqual([[]]);
     });
     it("collapses pairs", () => {
       const board = new Board();
-      expect(board.simplifyEdgeColorOrdering(["Y", "B", "B", "Y"])).toEqual([]);
+      expect(board.simplifyEdgeColorOrderings([["Y", "B", "B", "Y"]])).toEqual([[]]);
     });
     it("collapses singles and pairs combined", () => {
       const board = new Board();
-      expect(board.simplifyEdgeColorOrdering(["Y", "B", "R", "B", "G", "Y"])).toEqual([]);
+      expect(board.simplifyEdgeColorOrderings([["Y", "B", "R", "B", "G", "Y"]])).toEqual([[]]);
     });
+    it("untangles knots that have a component resolved in another area", () => {
+      const board = new Board();
+      expect(
+        board.simplifyEdgeColorOrderings([
+          ["R", "O", "R", "O"],
+          ["R", "R"],
+        ])
+      ).toEqual([[], []]);
+    });
+    it("untangles knots that have a component resolved in another area with a captured singlet", () => {
+      const board = new Board();
+      expect(
+        board.simplifyEdgeColorOrderings([
+          ["R", "O", "R", "O"],
+          ["R", "Y", "R"],
+        ])
+      ).toEqual([[], []]);
+    });
+    it("untangles knots that have a component resolved in another area with a captured singlet", () => {
+      // Note, this board is invalid, but still we shouldn't resolve these singlets in this function
+      const board = Board.fromString(
+        dedent`
+        B--Y--
+        -B-G--
+        ---R-R
+        Y--G--
+        `,
+        gridRules
+      );
+      const areas = board.getOpenAreas();
+      const colorOrderings = areas.map((area) => {
+        return board.getEdgeColorOrdering(area.perimeter);
+      });
+      const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
+      expect(simplifiedColorOrderings).toEqual([[], []]);
+    });
+    it("resolves singles in shared walls", () => {
+      // Note, this board is invalid, but still we shouldn't resolve these singlets in this function
+      const board = Board.fromString(
+        dedent`
+        ---B--
+        -B-G--
+        ---G--
+        ---R-R
+        `,
+        gridRules
+      );
+      const areas = board.getOpenAreas();
+      const colorOrderings = areas.map((area) => {
+        return board.getEdgeColorOrdering(area.perimeter);
+      });
+      const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
+      expect(simplifiedColorOrderings).toEqual([[], []]);
+    });
+    it("doesn't resolve singlets that have their pair in another area", () => {
+      // Note, this board is invalid, but still we shouldn't resolve these singlets in this function
+      const board = Board.fromString(
+        dedent`
+        B--Y--
+        ---G-B
+        ---R-R
+        Y--G--
+        `,
+        gridRules
+      );
+      const areas = board.getOpenAreas();
+      const colorOrderings = areas.map((area) => {
+        return board.getEdgeColorOrdering(area.perimeter);
+      });
+      const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
+      expect(simplifiedColorOrderings).not.toEqual([[], []]);
+    });
+
+    it("collapses a complex incomplete valid board", () => {
+      // Note, this board is invalid, but still we shouldn't resolve these singlets in this function
+      const board = Board.fromString(
+        dedent`
+        Cc--rrR
+        O-OCRbB
+        -----bG
+        -----gg
+        -G-----
+        -Y---B-
+        ----Y--
+        `,
+        gridRules
+      );
+      const areas = board.getOpenAreas();
+      const colorOrderings = areas.map((area) => {
+        return board.getEdgeColorOrdering(area.perimeter);
+      });
+      const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
+      expect(simplifiedColorOrderings).toEqual([[], []]);
+    });
+
+    // TODO: Resolve a board like this, with an island B
+    /*
+    B--Y--
+    -B-G--
+    ---R-R
+    Y--G--
+    */
+    // But not one like this, with a split B
   });
+
   describe("isValidPartial", () => {
     it("rejects isolated endpoints", () => {
       const boardString = dedent`
-        ObB
-        BbY
-        OYy
-      `;
+          ObB
+          BbY
+          OYy
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("rejects separated sides", () => {
       const boardString = dedent`
-        --Y-O
-        --y--
-        O-Y--
-      `;
+          --Y-O
+          --y--
+          O-Y--
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("accepts grids with items on same side of a separation", () => {
       const boardString = dedent`
-        O-Y-G
-        --y--
-        O-Y-G
-      `;
+          O-Y-G
+          --y--
+          O-Y-G
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
     });
     it("accepts a board with open space", () => {
       const boardString = dedent`
-        O-B
-        --Y
-        OB-
-        Y--
-      `;
+          O-B
+          --Y
+          OB-
+          Y--
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
     });
     it("rejects a board with knotted endpoints", () => {
       const boardString = dedent`
-        B-Y
-        ---
-        Y-B
-      `;
+          B-Y
+          ---
+          Y-B
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("rejects a board with knotted tails", () => {
       const boardString = dedent`
-        B-yY
-        b---
-        ---b
-        Yy-B
-      `;
+          B-yY
+          b---
+          ---b
+          Yy-B
+        `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
     it("rejects a board with a trapped end", () => {
       const boardString = dedent`
-        B-Y
-        -bB
-        -b#
-        Ybb
+          B-Y
+          -bB
+          -b#
+          Ybb
+        `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
+    it("accepts this specific troublesome board", () => {
+      const boardString = dedent`
+      Cc--rrR
+      O-OCRbB
+      -----bG
+      -----gg
+      -G-----
+      -Y---B-
+      ----Y--
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+    });
+    it("rejects lines that close back on themself", () => {
+      const boardString = dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G-----
+      -Y---Bb
+      ----Ybb
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
+    it("", () => {
+      const boardString = dedent`
+      B#-----
+      -Y---Bb
+      ----Y--
+      `;
+      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
+    it("", () => {
+      const boardString = dedent`
+      --B####
+      ---G###
+      -G-----
+      -Y---Bb
+      ----Y--
       `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
   });
-  describe("solve", () => {
+  xdescribe("solve", () => {
     it("solves a trivial board", async () => {
       const board = Board.fromString(
         dedent`
-          B-B
-        `,
+            B-B
+          `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-        BbB
-      `);
+          BbB
+        `);
     });
     it("solves a board with two colors", async () => {
       const board = Board.fromString(
         dedent`
-          Y---
-          B-BY
-        `,
+            Y---
+            B-BY
+          `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-        Yyyy
-        BbBY
-      `);
+          Yyyy
+          BbBY
+        `);
     });
     it("solves a board with a wrap around", async () => {
       const board = Board.fromString(
         dedent`
-          ---
-          -B-
-          ---
-          YBY
-        `,
+            ---
+            -B-
+            ---
+            YBY
+          `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-        yyy
-        yBy
-        yby
-        YBY
-      `);
+          yyy
+          yBy
+          yby
+          YBY
+        `);
     });
     it("solves a board with a double wrap around", async () => {
       const board = Board.fromString(
         dedent`
-        YB---
-        ---R-
-        -B---
-        ---RY
-      `,
-        gridRules
-      );
-      expect((await board.solve()).toString()).toEqual(dedent`
-        YByyy
-        ybyRy
-        yByry
-        yyyRY
-      `);
-    });
-    it("solves a board with an unintuitive long outer edge", async () => {
-      const board = Board.fromString(
-        dedent`
-        Y---Y
-        -BRB-
-        -----
-        #-R-#
-        #---#
+          YB---
+          ---R-
+          -B---
+          ---RY
         `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-        YbbbY
-        yBRBy
-        yyryy
-        #yRy#
-        #yyy#
-      `);
+          YByyy
+          ybyRy
+          yByry
+          yyyRY
+        `);
+    });
+    it("solves a board with an unintuitive long outer edge", async () => {
+      const board = Board.fromString(
+        dedent`
+          Y---Y
+          -BRB-
+          -----
+          #-R-#
+          #---#
+          `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
+          YbbbY
+          yBRBy
+          yyryy
+          #yRy#
+          #yyy#
+        `);
     });
     it("Solves 5x5 level 5", async () => {
       // Level 5 in Classic 5x5
       const board = Board.fromString(
         dedent`
-        -----
-        -GR-Y
-        ----O
-        YB-R-
-        B-GO-
-        `,
+          -----
+          -GR-Y
+          ----O
+          YB-R-
+          B-GO-
+          `,
         gridRules
       );
       const solution = await board.solve();
@@ -443,23 +592,23 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-      yyyyy
-      yGRrY
-      yggrO
-      YBgRo
-      BbGOo
-      `);
+        yyyyy
+        yGRrY
+        yggrO
+        YBgRo
+        BbGOo
+        `);
     }, 1000);
     it("Solves 5x5 level 30", async () => {
       // Level 5 in Classic 5x5
       const board = Board.fromString(
         dedent`
-        B---Y
-        -----
-        -RG--
-        --B--
-        GRY--
-        `,
+          B---Y
+          -----
+          -RG--
+          --B--
+          GRY--
+          `,
         gridRules
       );
       const solution = await board.solve();
@@ -467,24 +616,24 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-      BbbbY
-      gggby
-      gRGby
-      grBby
-      GRYyy
-      `);
+        BbbbY
+        gggby
+        gRGby
+        grBby
+        GRYyy
+        `);
     }, 1000);
     it("Solves a 6x6", async () => {
       // Level 8 in 6x6 mania
       const board = Board.fromString(
         dedent`
-        -----Y
-        ---RBG
-        --B---
-        --G---
-        ------
-        ----YR
-        `,
+          -----Y
+          ---RBG
+          --B---
+          --G---
+          ------
+          ----YR
+          `,
         gridRules
       );
       const solution = await board.solve();
@@ -492,13 +641,13 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-      yyyyyY
-      yrrRBG
-      yrBbbg
-      yrGggg
-      yrrrrr
-      yyyyYR
-      `);
+        yyyyyY
+        yrrRBG
+        yrBbbg
+        yrGggg
+        yrrrrr
+        yyyyYR
+        `);
     }, 1000);
     it("Solves a 7x7", async () => {
       // Level 1 in 7x7 mania
@@ -507,14 +656,14 @@ describe("Board", () => {
       // M = Maroon
       const board = Board.fromString(
         dedent`
-        -------
-        BY---CG
-        OB----R
-        --Y----
-        -----C-
-        ---O-G-
-        R------
-        `,
+          -------
+          BY---CG
+          OB----R
+          --Y----
+          -----C-
+          ---O-G-
+          R------
+          `,
         gridRules
       );
       const solution = await board.solve();
@@ -522,60 +671,79 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-      bbbbggg
-      BYybgCG
-      OBybgcR
-      obYbgcr
-      obbbgCr
-      oooOgGr
-      Rrrrrrr
-      `);
+        bbbbggg
+        BYybgCG
+        OBybgcR
+        obYbgcr
+        obbbgCr
+        oooOgGr
+        Rrrrrrr
+        `);
     }, 1000);
-    xit("Solves a 8x8", async () => {
+    it("Solves a 8x8", async () => {
       // Level 1 in 8x8 mania
       // P = Purple
       // K = Pink
       // M = Maroon
       const board = Board.fromString(
         dedent`
-        C--CY---
-        --RMK-K-
-        --B-----
-        --G-OM--
-        ----M---
-        ---R----
-        -B-G--OY
-        -------M
-        `,
+          C--CY---
+          --RMK-K-
+          --B-----
+          --G-OM--
+          ----M---
+          ---R----
+          -B-G--OY
+          -------M
+          `,
         gridRules
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
       expect(solution).toBeTruthy();
       console.log(solution.toString());
-      expect(solution.toString()).toEqual(``);
+      expect(solution.toString()).toEqual(dedent`
+        CccCYyyy
+        rrRMKkKy
+        rbBmoooy
+        rbGmOMoy
+        rbgmMmoy
+        rbgRrmoy
+        rBgGrmOY
+        rrrrrmmM
+        `);
     }, 1000);
     xit("Solves a 9x9", async () => {
       // Level 102 in 9x9 mania
       const board = Board.fromString(
         dedent`
-        OG-------
-        -------O-
-        Y-C------
-        --R------
-        ----BY---
-        ------G--
-        ------R--
-        ------C--
-        --------B
-        `,
+          OG-------
+          -------O-
+          Y-C------
+          --R------
+          ----BY---
+          ------G--
+          ------R--
+          ------C--
+          --------B
+          `,
         gridRules
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
       expect(solution).toBeTruthy();
       console.log(solution.toString());
-      expect(solution.toString()).toEqual(``);
+      expect(solution.toString()).toEqual(`
+        OGggggggg
+        oooooooOg
+        YcCgggggg
+        ycRgbbbbb
+        ycrgBYyyb
+        ycrgggGyb
+        ycrrrrRyb
+        ycccccCyb
+        yyyyyyyyB
+        `);
     }, 1000);
     xit("Solves a 10x10", async () => {
       // Level 22 in 10x10 mania
@@ -584,17 +752,17 @@ describe("Board", () => {
       // M = Maroon
       const board = Board.fromString(
         dedent`
-        ------BKCY
-        ----------
-        ----------
-        ---OP-CG--
-        ----------
-        ----PG-M--
-        ----OR----
-        ----M-R-K-
-        --------Y-
-        ---------B
-        `,
+          ------BKCY
+          ----------
+          ----------
+          ---OP-CG--
+          ----------
+          ----PG-M--
+          ----OR----
+          ----M-R-K-
+          --------Y-
+          ---------B
+          `,
         gridRules
       );
       const solution = await board.solve();
@@ -603,5 +771,128 @@ describe("Board", () => {
       console.log(solution.toString());
       expect(solution.toString()).toEqual(``);
     }, 1000);
+  });
+  describe("getValidMovesFrom", () => {
+    it("doesn't close off neighboring path", () => {
+      const board = Board.fromString(
+        dedent`
+          ---B
+          b--Y
+          BY##
+          `,
+        gridRules
+      );
+      const moves = board.getValidMovesFrom({ x: 0, y: 1 });
+      expect(moves).toMatchObject([
+        {
+          direction: { dx: 0, dy: -1 },
+        },
+      ]);
+      // Especially, it should not contain {dx: 1, dy: 0}
+    });
+    it("avoids closing off an area incorrectly", async () => {
+      const board = Board.fromString(
+        dedent`
+            Cc--rrR
+            O-OCRbB
+            -----bG
+            ------g
+            -G-----
+            -Y---B-
+            ----Y--
+            `,
+        gridRules
+      );
+      expect(
+        await board.getValidMovesFrom({
+          x: 6,
+          y: 3,
+        })
+      ).toMatchObject([
+        {
+          direction: {
+            dx: -1,
+            dy: 0,
+          },
+        },
+      ]);
+    });
+    it("avoids closing off an area incorrectly", async () => {
+      const board = Board.fromString(
+        dedent`
+        CcccrrR
+        OoOCRbB
+        --bbbbG
+        ---gggg
+        -G-----
+        -Y---B-
+        ----Y--
+        `,
+        gridRules
+      );
+      expect(
+        await board.getValidMovesFrom({
+          x: 4,
+          y: 6,
+        })
+      ).toMatchObject([
+        {
+          direction: {
+            dx: 1,
+            dy: 0,
+          },
+        },
+      ]);
+    });
+  });
+  describe("solveChoicelessMoves", () => {
+    it("solves a complete choiceless board", async () => {
+      const board = Board.fromString(
+        dedent`
+        G-Y---
+        R--B--
+        -RGO--
+        ------
+        ------
+        OBY---
+        `,
+        gridRules
+      );
+      const solution = await board.solveChoicelessMoves();
+      expect(solution.toString()).toEqual(dedent`
+      GgYyyy
+      RggBby
+      rRGOby
+      ooooby
+      obbbby
+      OBYyyy
+      `);
+    });
+    it("chooses correctly to not close off an area", async () => {
+      // 7x7 level 2
+      const board = Board.fromString(
+        dedent`
+        C-----R
+        O-OCR-B
+        ------G
+        -------
+        -G-----
+        -Y---B-
+        ----Y--
+        `,
+        gridRules
+      );
+      const solution = await board.solveChoicelessMoves();
+      // TODO: Update once this solves further
+      expect(solution.toString()).toEqual(dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G-----
+      -Y---B-
+      ----Y--
+      `);
+    });
   });
 });

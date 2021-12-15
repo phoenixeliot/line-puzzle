@@ -22,6 +22,25 @@ export class Area {
     this.perimeter = perimeter;
   }
 
+  toString(board): string {
+    const grid = [];
+    if (board) {
+      for (const cell of board.iterateCells()) {
+        if (!grid[cell.position.y]) {
+          grid[cell.position.y] = [];
+        }
+        grid[cell.position.y][cell.position.x] = "-";
+      }
+    }
+    for (const position of this.positions) {
+      grid[position.y][position.x] = "^";
+    }
+    for (const position of this.perimeter) {
+      grid[position.y][position.x] = "@";
+    }
+    return grid.map((row) => row.join("")).join("\n");
+  }
+
   static fromCell(cell: Cell): Area {
     const board = cell.board;
     if (!cell.isActive()) {
@@ -35,14 +54,18 @@ export class Area {
     const growingEdge = new SerializedSet<Position>([cell.position]);
     while (growingEdge.size > 0) {
       for (const newPos of growingEdge) {
-        const unexploredNeighbors = cell.board.getNeighborCells(newPos).filter((neighborCell) => {
-          return (
-            neighborCell.isActive() &&
-            !filledPositions.has(neighborCell.position) &&
-            !growingEdge.has(neighborCell.position)
-          );
-        });
-        unexploredNeighbors.forEach((cell) => growingEdge.add(cell.position));
+        // Don't explore "through" tails; tails can close off an area from another.
+        if (board.getCell(newPos).isEmpty()) {
+          // Breadth-first include all active neighbors in the space to explore
+          const unexploredNeighbors = cell.board.getNeighborCells(newPos).filter((neighborCell) => {
+            return (
+              neighborCell.isActive() &&
+              !filledPositions.has(neighborCell.position) &&
+              !growingEdge.has(neighborCell.position)
+            );
+          });
+          unexploredNeighbors.forEach((cell) => growingEdge.add(cell.position));
+        }
         filledPositions.add(newPos);
         growingEdge.delete(newPos);
       }
@@ -65,8 +88,14 @@ export class Area {
       })
     );
 
+    // Start from the top-leftmost cell, because that cell can't be surrounded by more than 2 perimeter cells incl across 2-wide channels
+    const perimeterStart = unorderedPerimeter.min((a, b) => {
+      if (a.x < b.x) return a;
+      if (a.x > b.x) return b;
+      if (a.y < b.y) return a;
+      if (a.y > b.y) return b;
+    });
     // Find the next cell on the perimeter, going clockwise
-    const perimeterStart = unorderedPerimeter.getOne();
     let nextNeighbor;
     let nextStartDirection;
     {
