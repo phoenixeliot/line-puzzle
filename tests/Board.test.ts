@@ -735,94 +735,94 @@ describe("Board", () => {
       ).toBe(false);
     });
   });
-  xdescribe("solve", () => {
+  describe("solve", () => {
     it("solves a trivial board", async () => {
       const board = Board.fromString(
         dedent`
-            B-B
-          `,
-        gridRules
-      );
-      expect((await board.solve()).toString()).toEqual(dedent`
-          BbB
-        `);
-    });
-    it("solves a board with two colors", async () => {
-      const board = Board.fromString(
-        dedent`
-            Y---
-            B-BY
-          `,
-        gridRules
-      );
-      expect((await board.solve()).toString()).toEqual(dedent`
-          Yyyy
-          BbBY
-        `);
-    });
-    it("solves a board with a wrap around", async () => {
-      const board = Board.fromString(
-        dedent`
-            ---
-            -B-
-            ---
-            YBY
-          `,
-        gridRules
-      );
-      expect((await board.solve()).toString()).toEqual(dedent`
-          yyy
-          yBy
-          yby
-          YBY
-        `);
-    });
-    it("solves a board with a double wrap around", async () => {
-      const board = Board.fromString(
-        dedent`
-          YB---
-          ---R-
-          -B---
-          ---RY
+        B-B
         `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-          YByyy
-          ybyRy
-          yByry
-          yyyRY
-        `);
+      BbB
+      `);
+    });
+    it("solves a board with two colors", async () => {
+      const board = Board.fromString(
+        dedent`
+        Y---
+        B-BY
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
+      Yyyy
+      BbBY
+      `);
+    });
+    it("solves a board with a wrap around", async () => {
+      const board = Board.fromString(
+        dedent`
+        ---
+        -B-
+        ---
+        YBY
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
+      yyy
+      yBy
+      yby
+      YBY
+      `);
+    });
+    it("solves a board with a double wrap around", async () => {
+      const board = Board.fromString(
+        dedent`
+        YB---
+        ---R-
+        -B---
+        ---RY
+        `,
+        gridRules
+      );
+      expect((await board.solve()).toString()).toEqual(dedent`
+      YByyy
+      ybyRy
+      yByry
+      yyyRY
+      `);
     });
     it("solves a board with an unintuitive long outer edge", async () => {
       const board = Board.fromString(
         dedent`
-          Y---Y
-          -BRB-
-          -----
-          #-R-#
-          #---#
-          `,
+        Y---Y
+        -BRB-
+        -----
+        #-R-#
+        #---#
+        `,
         gridRules
       );
       expect((await board.solve()).toString()).toEqual(dedent`
-          YbbbY
-          yBRBy
-          yyryy
-          #yRy#
-          #yyy#
-        `);
+      YbbbY
+      yBRBy
+      yyryy
+      #yRy#
+      #yyy#
+      `);
     });
     it("Solves 5x5 level 5", async () => {
       // Level 5 in Classic 5x5
       const board = Board.fromString(
         dedent`
-          -----
-          -GR-Y
-          ----O
-          YB-R-
-          B-GO-
-          `,
+        -----
+        -GR-Y
+        ----O
+        YB-R-
+        B-GO-
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -830,23 +830,23 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-        yyyyy
-        yGRrY
-        yggrO
-        YBgRo
-        BbGOo
-        `);
+      yyyyy
+      yGRrY
+      yggrO
+      YBgRo
+      BbGOo
+      `);
     }, 1000);
     it("Solves 5x5 level 30", async () => {
       // Level 5 in Classic 5x5
       const board = Board.fromString(
         dedent`
-          B---Y
-          -----
-          -RG--
-          --B--
-          GRY--
-          `,
+        B---Y
+        -----
+        -RG--
+        --B--
+        GRY--
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -854,24 +854,24 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-        BbbbY
-        gggby
-        gRGby
-        grBby
-        GRYyy
-        `);
+      BbbbY
+      gggby
+      gRGby
+      grBby
+      GRYyy
+      `);
     }, 1000);
     it("Solves a 6x6", async () => {
       // Level 8 in 6x6 mania
       const board = Board.fromString(
         dedent`
-          -----Y
-          ---RBG
-          --B---
-          --G---
-          ------
-          ----YR
-          `,
+        -----Y
+        ---RBG
+        --B---
+        --G---
+        ------
+        ----YR
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -879,13 +879,13 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-        yyyyyY
-        yrrRBG
-        yrBbbg
-        yrGggg
-        yrrrrr
-        yyyyYR
-        `);
+      yyyyyY
+      yrrRBG
+      yrBbbg
+      yrGggg
+      yrrrrr
+      yyyyYR
+      `);
     }, 1000);
     it("Solves a 7x7", async () => {
       // Level 1 in 7x7 mania
@@ -894,14 +894,14 @@ describe("Board", () => {
       // M = Maroon
       const board = Board.fromString(
         dedent`
-          -------
-          BY---CG
-          OB----R
-          --Y----
-          -----C-
-          ---O-G-
-          R------
-          `,
+        -------
+        BY---CG
+        OB----R
+        --Y----
+        -----C-
+        ---O-G-
+        R------
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -909,14 +909,14 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-        bbbbggg
-        BYybgCG
-        OBybgcR
-        obYbgcr
-        obbbgCr
-        oooOgGr
-        Rrrrrrr
-        `);
+      bbbbggg
+      BYybgCG
+      OBybgcR
+      obYbgcr
+      obbbgCr
+      oooOgGr
+      Rrrrrrr
+      `);
     }, 1000);
     it("Solves a 8x8", async () => {
       // Level 1 in 8x8 mania
@@ -925,15 +925,15 @@ describe("Board", () => {
       // M = Maroon
       const board = Board.fromString(
         dedent`
-          C--CY---
-          --RMK-K-
-          --B-----
-          --G-OM--
-          ----M---
-          ---R----
-          -B-G--OY
-          -------M
-          `,
+        C--CY---
+        --RMK-K-
+        --B-----
+        --G-OM--
+        ----M---
+        ---R----
+        -B-G--OY
+        -------M
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -941,30 +941,30 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
-        CccCYyyy
-        rrRMKkKy
-        rbBmoooy
-        rbGmOMoy
-        rbgmMmoy
-        rbgRrmoy
-        rBgGrmOY
-        rrrrrmmM
-        `);
+      CccCYyyy
+      rrRMKkKy
+      rbBmoooy
+      rbGmOMoy
+      rbgmMmoy
+      rbgRrmoy
+      rBgGrmOY
+      rrrrrmmM
+      `);
     }, 1000);
     xit("Solves a 9x9", async () => {
       // Level 102 in 9x9 mania
       const board = Board.fromString(
         dedent`
-          OG-------
-          -------O-
-          Y-C------
-          --R------
-          ----BY---
-          ------G--
-          ------R--
-          ------C--
-          --------B
-          `,
+        OG-------
+        -------O-
+        Y-C------
+        --R------
+        ----BY---
+        ------G--
+        ------R--
+        ------C--
+        --------B
+        `,
         gridRules
       );
       const solution = await board.solve();
@@ -972,16 +972,16 @@ describe("Board", () => {
       expect(solution).toBeTruthy();
       console.log(solution.toString());
       expect(solution.toString()).toEqual(`
-        OGggggggg
-        oooooooOg
-        YcCgggggg
-        ycRgbbbbb
-        ycrgBYyyb
-        ycrgggGyb
-        ycrrrrRyb
-        ycccccCyb
-        yyyyyyyyB
-        `);
+      OGggggggg
+      oooooooOg
+      YcCgggggg
+      ycRgbbbbb
+      ycrgBYyyb
+      ycrgggGyb
+      ycrrrrRyb
+      ycccccCyb
+      yyyyyyyyB
+      `);
     }, 1000);
     xit("Solves a 10x10", async () => {
       // Level 22 in 10x10 mania
@@ -990,17 +990,17 @@ describe("Board", () => {
       // M = Maroon
       const board = Board.fromString(
         dedent`
-          ------BKCY
-          ----------
-          ----------
-          ---OP-CG--
-          ----------
-          ----PG-M--
-          ----OR----
-          ----M-R-K-
-          --------Y-
-          ---------B
-          `,
+        ------BKCY
+        ----------
+        ----------
+        ---OP-CG--
+        ----------
+        ----PG-M--
+        ----OR----
+        ----M-R-K-
+        --------Y-
+        ---------B
+        `,
         gridRules
       );
       const solution = await board.solve();
