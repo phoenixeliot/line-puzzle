@@ -158,6 +158,7 @@ describe("Area", () => {
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(8);
+      expect(area.body.size).toEqual(0);
     });
     it("fills an area with a hole", () => {
       const board = Board.fromString(
@@ -205,6 +206,45 @@ describe("Area", () => {
       );
       const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
       expect(area.positions.size).toBe(3);
+    });
+    it("includes inner cells in body", () => {
+      const board = Board.fromString(
+        dedent`
+        -B---
+        -G---
+        ---Y-
+        -----
+        -----
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      expect(area.positions.size).toBe(25);
+      expect(area.body.size).toBe(9);
+      expect(area.perimeter.length).toBe(16);
+    });
+    it("includes inner cells in body 2", () => {
+      const board = Board.fromString(
+        dedent`
+        --B####
+        ---G###
+        -G-----
+        -Y---Bb
+        ----Y--
+        `,
+        gridRules
+      );
+      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      expect(area.toString(board)).toEqual(dedent`
+      @@@----
+      @^@@---
+      @^^@@@@
+      @^^^@-@
+      @@@@@--
+      `);
+      expect(area.positions.size).toBe(3 + 4 + 7 + 6 + 5);
+      expect(area.body.size).toBe(6);
+      expect(area.perimeter.length).toBe(22);
     });
   });
 });

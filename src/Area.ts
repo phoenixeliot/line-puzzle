@@ -1,6 +1,11 @@
 import isEqual from "lodash/isEqual";
 import { SerializedSet } from "./SerializedSet";
-import { Position, getNextClockwiseDirection, getClockwiseDirectionsStartingWith } from "./Board";
+import {
+  Position,
+  getNextClockwiseDirection,
+  getClockwiseDirectionsStartingWith,
+  Board,
+} from "./Board";
 import { Cell } from "./Cell";
 import { getNeighborDirections } from "./gridRules";
 
@@ -21,7 +26,7 @@ export class Area {
   }) {
     this.positions = positions;
     this.perimeter = perimeter;
-    const perimeterSet = new Set(perimeter);
+    const perimeterSet = new SerializedSet<Position>(perimeter);
     this.body = new SerializedSet(Array.from(positions.filter((p) => !perimeterSet.has(p))));
   }
 
@@ -42,6 +47,12 @@ export class Area {
       grid[position.y][position.x] = "@";
     }
     return grid.map((row) => row.join("")).join("\n");
+  }
+
+  getInnerColors(board: Board) {
+    const cells = this.body.map((p) => board.getCell(p));
+    console.log(cells[0]);
+    return new Set(cells.filter((c) => c.hasLine()).map((c) => c.color));
   }
 
   static fromCell(cell: Cell): Area {

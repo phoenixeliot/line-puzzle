@@ -4,6 +4,7 @@ import { Area } from "../src/Area";
 import { AreaColors, Board } from "../src/Board";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
+import { SerializedSet } from "../src/SerializedSet";
 
 describe("dedent utility", () => {
   it("Removes extraneous whitespace", () => {
@@ -216,10 +217,15 @@ describe("Board", () => {
         ])
       ).toMatchObject([{ perimeterColors: ["B", "Y", "B", "Y"] }]);
     });
-    it("collapses singles", () => {
+    xit("collapses singles", () => {
       const board = new Board();
       expect(
-        board.simplifyEdgeColorOrderings([new AreaColors({ perimeterColors: ["Y", "B", "R"] })])
+        board.simplifyEdgeColorOrderings([
+          new AreaColors({
+            perimeterColors: ["Y", "B", "R"],
+            innerColors: new Set(["Y", "B", "R"]),
+          }),
+        ])
       ).toMatchObject([{ perimeterColors: [] }]);
     });
     it("collapses pairs", () => {
@@ -234,7 +240,10 @@ describe("Board", () => {
       const board = new Board();
       expect(
         board.simplifyEdgeColorOrderings([
-          new AreaColors({ perimeterColors: ["Y", "B", "R", "B", "G", "Y"] }),
+          new AreaColors({
+            perimeterColors: ["Y", "B", "R", "B", "G", "Y"],
+            innerColors: new Set(["R", "G"]),
+          }),
         ])
       ).toMatchObject([{ perimeterColors: [] }]);
     });
@@ -252,7 +261,7 @@ describe("Board", () => {
       expect(
         board.simplifyEdgeColorOrderings([
           new AreaColors({ perimeterColors: ["R", "O", "R", "O"] }),
-          new AreaColors({ perimeterColors: ["R", "Y", "R"] }),
+          new AreaColors({ perimeterColors: ["R", "Y", "R"], innerColors: new Set(["Y"]) }),
         ])
       ).toMatchObject([{ perimeterColors: [] }, { perimeterColors: [] }]);
     });
@@ -269,7 +278,7 @@ describe("Board", () => {
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
-        return new AreaColors({ perimeterColors: board.getEdgeColorOrdering(area.perimeter) });
+        return board.getAreaColors(area);
       });
       const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
       expect(simplifiedColorOrderings).toMatchObject([
@@ -290,7 +299,7 @@ describe("Board", () => {
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
-        return new AreaColors({ perimeterColors: board.getEdgeColorOrdering(area.perimeter) });
+        return board.getAreaColors(area);
       });
       const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
       expect(simplifiedColorOrderings).toMatchObject([
@@ -336,13 +345,39 @@ describe("Board", () => {
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
-        return new AreaColors({ perimeterColors: board.getEdgeColorOrdering(area.perimeter) });
+        return board.getAreaColors(area);
       });
       const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
       expect(simplifiedColorOrderings).toMatchObject([
         { perimeterColors: [] },
         { perimeterColors: [] },
       ]);
+    });
+    it("detects line-less areas", () => {
+      // Note, this board is invalid, but still we shouldn't resolve these singlets in this function
+      const board = Board.fromString(
+        dedent`
+        --B####
+        ---G###
+        -G-----
+        -Y---Bb
+        ----Y--
+        `,
+        gridRules
+      );
+      const areas = board.getOpenAreas();
+      const colorOrderings = areas.map((area) => {
+        const innerColors = area.getInnerColors(board);
+        console.log(innerColors);
+        return new AreaColors({
+          perimeterColors: board.getEdgeColorOrdering(area.perimeter),
+          innerColors,
+        });
+      });
+      const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
+      expect(simplifiedColorOrderings[0].lineColors).toEqual(new Set(["B", "G", "Y"]));
+      expect(simplifiedColorOrderings[1].lineColors).toEqual(new Set([]));
+      // expect(simplifiedColorOrderings).toMatchObject([{}, { lineColors: new SerializedSet([]) }]);
     });
   });
   describe("isValidPartial", () => {
@@ -437,7 +472,7 @@ describe("Board", () => {
       `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
     });
-    it("rejects complex abandoned area", () => {
+    it("rejects abandoned area with islands", () => {
       const boardString = dedent`
       --B####
       ---G###
@@ -446,6 +481,61 @@ describe("Board", () => {
       ----Y--
       `;
       expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+    });
+    it("rejects abandoned area with islands (complex)", () => {
+      const boardString = dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G-----
+      -Y---B-
+      ----Y--
+      `;
+      const board = Board.fromString(boardString, gridRules);
+      expect(board.isValidPartial()).toBe(true);
+    });
+    it("rejects abandoned area with islands (complex)", () => {
+      const boardString = dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G-----
+      -Y---B-
+      ----Yb-
+      `;
+      const board = Board.fromString(boardString, gridRules);
+      board.solveChoicelessMoves();
+      expect(board.isValidPartial()).toBe(false);
+    });
+    it("rejects abandoned area with islands (complex)", () => {
+      const boardString = dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G-----
+      -Y---Bb
+      ----Y--
+      `;
+      const board = Board.fromString(boardString, gridRules);
+      board.solveChoicelessMoves();
+      expect(board.isValidPartial()).toBe(false);
+    });
+    it("rejects abandoned area with islands (complex)", () => {
+      const boardString = dedent`
+      CcccrrR
+      OoOCRbB
+      --bbbbG
+      ---gggg
+      -G---b-
+      -Y---B-
+      ----Y--
+      `;
+      const board = Board.fromString(boardString, gridRules);
+      board.solveChoicelessMoves();
+      expect(board.isValidPartial()).toBe(false);
     });
   });
   describe("getValidMovesFrom", () => {
@@ -467,16 +557,17 @@ describe("Board", () => {
       // Especially, it should not contain {dx: 1, dy: 0}
     });
     it("avoids closing off an area incorrectly", async () => {
+      // should grow the g to the left
       const board = Board.fromString(
         dedent`
-            Cc--rrR
-            O-OCRbB
-            -----bG
-            ------g
-            -G-----
-            -Y---B-
-            ----Y--
-            `,
+        Cc--rrR
+        O-OCRbB
+        -----bG
+        ------g
+        -G-----
+        -Y---B-
+        ----Y--
+        `,
         gridRules
       );
       expect(
@@ -494,6 +585,7 @@ describe("Board", () => {
       ]);
     });
     it("avoids abandoning an area", async () => {
+      // The B in the bottom right should only grow left (not close the bottom right corner off)
       const board = Board.fromString(
         dedent`
         CcccrrR
@@ -512,6 +604,15 @@ describe("Board", () => {
           y: 5,
         })
       ).toMatchObject([
+        // We allow down here because it's not illegal after just 1 turn;
+        // it takes filling the bottom corner to become illegal
+        {
+          direction: {
+            dx: 0,
+            dy: 1,
+          },
+        },
+        // This is the correct direction
         {
           direction: {
             dx: -1,

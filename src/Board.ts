@@ -36,15 +36,17 @@ export interface Rules {
 }
 
 export class AreaColors {
+  originalPerimeterColors: Array<string>;
   perimeterColors: Array<string>;
-  innerColors?: SerializedSet<string>;
-  lineColors?: SerializedSet<string>;
+  innerColors?: Set<string>;
+  lineColors?: Set<string>;
 
   constructor({
     perimeterColors,
-    innerColors = new SerializedSet<string>(),
-    lineColors = new SerializedSet<string>(),
+    innerColors = new Set<string>(),
+    lineColors = new Set<string>(),
   }) {
+    this.originalPerimeterColors = Array.from(perimeterColors);
     this.perimeterColors = perimeterColors;
     this.innerColors = innerColors;
     this.lineColors = lineColors;
@@ -302,11 +304,20 @@ export class Board {
       .filter((color) => COLORS.includes(color));
   }
 
+  getAreaColors(area: Area) {
+    return new AreaColors({
+      perimeterColors: this.getEdgeColorOrdering(area.perimeter),
+      innerColors: area.getInnerColors(this),
+    });
+  }
+
+  // TODO: Move with getAreaColors into Area class or so
   simplifyEdgeColorOrderings(colorOrderings: Array<AreaColors>): Array<AreaColors> {
     const simplifiedOrderings: Array<AreaColors> = cloneDeep(colorOrderings);
     const resolvedColors = new Set();
     // First, simplify each ordering independently
-    while (simplifiedOrderings.some((areaColors) => areaColors.perimeterColors.length)) {
+    // while (simplifiedOrderings.some((areaColors) => areaColors.perimeterColors.length)) {
+    while (true) {
       let madeChanges = false;
       for (const areaColors of simplifiedOrderings) {
         const colorOrdering = areaColors.perimeterColors;
@@ -315,16 +326,18 @@ export class Board {
           const nextColor = colorOrdering[(index + 1) % colorOrdering.length];
           if (
             colorOrdering.filter((color) => color === currentColor).length === 1 &&
-            simplifiedOrderings.filter((areaColors) =>
-              areaColors.perimeterColors.includes(currentColor)
-            ).length === 1
+            // simplifiedOrderings.filter((areaColors) =>
+            //   areaColors.perimeterColors.includes(currentColor)
+            // ).length === 1 &&
+            areaColors.innerColors.has(currentColor)
           ) {
-            // resolvedColors.add(currentColor);
+            resolvedColors.add(currentColor);
+            areaColors.lineColors.add(currentColor);
             colorOrdering.splice(index, 1);
             madeChanges = true;
             break;
           }
-          if (currentColor == nextColor) {
+          if (colorOrdering.length > 1 && currentColor == nextColor) {
             resolvedColors.add(currentColor);
             areaColors.lineColors.add(currentColor);
             colorOrdering.splice(index, 2);
@@ -382,13 +395,14 @@ export class Board {
     // Check for unresolvable tangles (eg endpoints on border that go RBRB around the perimeter)
     const areas = this.getOpenAreas();
     const areaColorSets = areas.map((area) => {
-      return new AreaColors({
-        perimeterColors: this.getEdgeColorOrdering(area.perimeter),
-        innerColors: area.body.map((p) => this.getCell(p).color),
-      });
+      return this.getAreaColors(area);
     });
     const simplifiedColorOrderings = this.simplifyEdgeColorOrderings(areaColorSets);
-    if (simplifiedColorOrderings.some((ordering) => ordering.perimeterColors.length > 0)) {
+    if (
+      simplifiedColorOrderings.some(
+        (ordering) => ordering.perimeterColors.length > 0 || ordering.lineColors.size === 0
+      )
+    ) {
       return false;
     }
 
