@@ -10,6 +10,7 @@ import { getNeighborDirections } from "./gridRules";
 export class Area {
   positions: SerializedSet<Position>;
   perimeter: Array<Position>; // Clockwise ordered cells marking the outer edge of the area
+  body: SerializedSet<Position>;
 
   constructor({
     positions,
@@ -20,6 +21,8 @@ export class Area {
   }) {
     this.positions = positions;
     this.perimeter = perimeter;
+    const perimeterSet = new Set(perimeter);
+    this.body = new SerializedSet(Array.from(positions.filter((p) => !perimeterSet.has(p))));
   }
 
   toString(board): string {

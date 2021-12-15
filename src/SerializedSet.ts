@@ -14,6 +14,13 @@ export class SerializedSet<T> extends Set {
   deserializeItem(string: string): T {
     return JSON.parse(string);
   }
+  map(transformFn: (v: T) => any): SerializedSet<any> {
+    const newSet = new SerializedSet<any>();
+    for (const value of this) {
+      newSet.add(transformFn(value));
+    }
+    return newSet;
+  }
   *filter(filterFn: (v: T) => boolean = () => true): Generator<T, void, unknown> {
     const values = this.values();
     let next;
