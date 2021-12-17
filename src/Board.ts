@@ -293,10 +293,7 @@ export class Board {
     );
     // First loop through all empty spaces
     // THEN loop through all other spaces (which should be fully surrounded singlets only)
-    console.log(remainingPositions);
     for (const filterFn of [(pos) => this.getCell(pos).isEmpty(), (pos) => true]) {
-      console.log(remainingPositions);
-      console.log(new Set(remainingPositions.filter(filterFn)).size);
       while (new Set(remainingPositions.filter(filterFn)).size > 0) {
         const cell = this.getCell(remainingPositions.getOne(filterFn));
         // either:
@@ -404,11 +401,8 @@ export class Board {
     // 1. Find the two unjoined tail ends of each current incomplete line
     const hasPathBetweenTails = tails.every((tailCell1) => {
       const tailCell2 = tails.find((cell) => cell.color === tailCell1.color && cell !== tailCell1);
+      if (!tailCell2) return false;
       // 2. Run A* to find a path between the tails. If no path, then invalid
-      if (!tailCell2) {
-        console.log(this.toString());
-        console.log();
-      }
       return this.canConnect(tailCell1.position, tailCell2.position);
     });
     if (!hasPathBetweenTails) return false;
@@ -456,15 +450,11 @@ export class Board {
     const directions = this.rules.getNeighborDirections(position);
     return directions
       .filter((direction) => {
-        if (isEqual(direction, { dx: -1, dy: 0 })) {
-          console.log(direction);
-        }
         const newPosition = { x: position.x + direction.dx, y: position.y + direction.dy };
         if (!this.isValidPosition(newPosition)) return false;
         if (!this.getCell(newPosition).isEmpty()) return false;
         const hypotheticalBoard = new Board(this.data, this.rules);
         hypotheticalBoard.setColor(newPosition, cell.color);
-        console.log(hypotheticalBoard.toString());
         if (!hypotheticalBoard.isValidPartial()) return false;
         return true;
       })
@@ -477,19 +467,23 @@ export class Board {
   }
 
   async solve() {
-    const [solution, _] = await this._solve();
-    return solution;
+    const { board } = await this._solve();
+    return board;
   }
 
   // TODO fix this any type
-  async _solve(copy = true, recursionAttempts = 0): Promise<any> {
+  async _solve(
+    copy = true,
+    recursionAttempts = 0
+  ): Promise<{ board; isComplete; recursionAttempts }> {
     // if (level > 3) {
     //   return this;
     // }
-    if (recursionAttempts > 1) {
-      return [this, recursionAttempts];
-    }
-    console.log({ recursionAttempts });
+    console.log(this.toString());
+    // if (recursionAttempts >= 1) {
+    //   return { board: this, isComplete: this.isComplete(), recursionAttempts };
+    // }
+    // console.log({ recursionAttempts });
     // If board is ever not isValidPartial(), cancel the current search branch
 
     // const workingBoard = new Board(this.data, this.rules);
@@ -512,7 +506,6 @@ export class Board {
     // - TODO Move toward the same color tail
     for (const tail of this.iterateTails()) {
       for (const emptyCell of tail.getNeighbors().filter((n) => n.isEmpty())) {
-        console.log("Attempting solution at cell:", emptyCell);
         const hypothesisBoard = new Board(this.data, this.rules);
         hypothesisBoard.setColor(emptyCell.position, tail.color);
         // console.log(`at depth ${level}:\n${hypothesisBoard.toString()}`);
@@ -522,9 +515,11 @@ export class Board {
           isComplete,
           recursionAttempts: newRecursionAttempts,
         } = await hypothesisBoard._solve(false, recursionAttempts); // don't re-duplicate since we just duplicated
-        if (isComplete) {
+        recursionAttempts = recursionAttempts + newRecursionAttempts;
+        console.log({ recursionAttempts });
+        if (isComplete || recursionAttempts > 3) {
           console.log(`Success after ${recursionAttempts} recursions`);
-          return [board, recursionAttempts + newRecursionAttempts];
+          return { board, isComplete, recursionAttempts };
         }
       }
     }
@@ -537,6 +532,8 @@ export class Board {
     };
   }
 
+  // TODO: Make an animation out of this
+  // TODO: Maybe convert to React while I'm at it to use time travel features
   async solveChoicelessMoves(): Promise<Board> {
     // First, find moves that must be done
     // Types:
@@ -547,16 +544,12 @@ export class Board {
     while (madeChanges) {
       console.log(this.toString());
       madeChanges = false;
-      if (Array.from(this.iterateFilledCells()).length === 27) {
-        console.log(this.toString());
-      }
       for (const tail of this.iterateTails()) {
         const neighbors = tail.getNeighbors();
         const emptyNeighbors = neighbors.filter((neighbor) => neighbor.isEmpty());
         if (emptyNeighbors.length === 1) {
           const emptyNeighbor = emptyNeighbors[0];
           this.setColor(emptyNeighbor.position, tail.color);
-          console.log(`Setting color ${tail.color} at ${JSON.stringify(emptyNeighbor.position)}`);
           madeChanges = true;
           break; // Regenerate the list of tails
         }
@@ -564,7 +557,6 @@ export class Board {
         if (validMoves.length === 1) {
           const movePosition = validMoves[0].position;
           this.setColor(movePosition, tail.color);
-          console.log(`Setting color ${tail.color} at ${movePosition}`);
           madeChanges = true;
           break;
         }

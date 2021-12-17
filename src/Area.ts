@@ -51,7 +51,6 @@ export class Area {
 
   getInnerColors(board: Board) {
     const cells = this.body.map((p) => board.getCell(p));
-    console.log(cells[0]);
     return new Set(cells.filter((c) => c.hasLine()).map((c) => c.color));
   }
 

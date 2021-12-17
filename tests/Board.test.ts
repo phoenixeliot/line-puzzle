@@ -918,7 +918,7 @@ describe("Board", () => {
       Rrrrrrr
       `);
     }, 1000);
-    it("Solves a 8x8", async () => {
+    it("Solves 8x8 level 1", async () => {
       // Level 1 in 8x8 mania
       // P = Purple
       // K = Pink
@@ -939,7 +939,6 @@ describe("Board", () => {
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
       expect(solution).toBeTruthy();
-      console.log(solution.toString());
       expect(solution.toString()).toEqual(dedent`
       CccCYyyy
       rrRMKkKy
@@ -949,6 +948,31 @@ describe("Board", () => {
       rbgRrmoy
       rBgGrmOY
       rrrrrmmM
+      `);
+    }, 1000);
+    xit("Solves 8x8 level 3", async () => {
+      // Level 1 in 8x8 mania
+      // P = Purple
+      // K = Pink
+      // M = Maroon
+      const board = Board.fromString(
+        dedent`
+        BY-----R
+        ------O-
+        ----Y---
+        -----G--
+        --O--B-G
+        --R--C--
+        ------C-
+        --------
+        `,
+        gridRules
+      );
+      const solution = await board.solve();
+      console.log("solution\n" + solution.toString());
+      expect(solution).toBeTruthy();
+      expect(solution.toString()).toEqual(dedent`
+
       `);
     }, 1000);
     xit("Solves a 9x9", async () => {
