@@ -4,7 +4,8 @@ import cloneDeepWith from "lodash/cloneDeepWith";
 import { Area } from "./Area";
 import { Cell } from "./Cell";
 import { SerializedSet } from "./SerializedSet";
-import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./contants";
+import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./constants";
+import { colorize } from "./terminalColors";
 
 export function getNextClockwiseDirection(direction, directions) {
   const index = directions.findIndex(isEqual.bind(null, direction));
@@ -57,6 +58,19 @@ export class Board {
   data: Array<Array<Cell>>;
   rules: Rules;
   colors: Set<string>;
+  consoleColorMap = {
+    "-": ["dim"],
+    "#": ["black", "whiteBg"],
+    R: "red",
+    G: "green",
+    Y: "yellow",
+    B: "blue",
+    K: "magenta", // pink, closest console color
+    C: "cyan",
+    N: "greenBg", // brown, no console color
+    O: "redBg", // orange, no console color
+    P: "magentaBg", // purple, no console color
+  };
 
   // Just create the object, we initialize it later so Cells can have a reference to the Board
   constructor(data?: Array<Array<Cell>>, rules?: Rules) {
@@ -105,11 +119,18 @@ export class Board {
     return board;
   }
 
-  toString() {
+  toString(useColors = false) {
     return this.data
       .map((row) =>
         row
-          .map((cell) => (cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase()))
+          .map((cell) => {
+            const cellText = cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase();
+            if (useColors) {
+              return colorize(cellText, this.consoleColorMap[cell.color]);
+            } else {
+              return cellText;
+            }
+          })
           .join("")
       )
       .join("\n");

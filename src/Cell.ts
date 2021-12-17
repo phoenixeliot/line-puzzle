@@ -1,5 +1,5 @@
 import { Position, Board } from "./Board";
-import { COLORS, EMPTY } from "./contants";
+import { COLORS, EMPTY } from "./constants";
 
 /*
 Terminology:
