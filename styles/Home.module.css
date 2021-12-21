@@ -1,3 +1,9 @@
+.page {
+  background: #1a1a1a;
+  min-height: 100vh;
+}
+
+/* Next.js defaults, remove later TODO */
 .container {
   padding: 0 2rem;
 }

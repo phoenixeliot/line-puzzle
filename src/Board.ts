@@ -27,7 +27,7 @@ export interface Position {
   x: number;
   y: number;
 }
-interface PositionDelta {
+export interface PositionDelta {
   dx: number;
   dy: number;
 }
@@ -124,7 +124,9 @@ export class Board {
       .map((row) =>
         row
           .map((cell) => {
-            const cellText = cell.isEndpoint ? cell.color.toUpperCase() : cell.color.toLowerCase();
+            const cellText = cell.isEndpoint
+              ? cell.color.toUpperCase()
+              : cell.color.toLowerCase();
             if (useColors) {
               return colorize(cellText, this.consoleColorMap[cell.color]);
             } else {
@@ -159,7 +161,7 @@ export class Board {
     try {
       cell = this.data[position.y][position.x];
     } catch (e) {}
-    if (!cell) throw Error(`No cell found at position ${position}`);
+    if (!cell) throw Error(`No cell found at position ${JSON.stringify(position)}`);
     return cell;
   }
 
@@ -185,7 +187,9 @@ export class Board {
 
   getSameColorNeighborCells(position: Position) {
     const cell = this.getCell(position);
-    return this.getNeighborCells(position).filter((neighbor) => neighbor.color === cell.color);
+    return this.getNeighborCells(position).filter(
+      (neighbor) => neighbor.color === cell.color
+    );
   }
 
   getColors() {
@@ -228,7 +232,9 @@ export class Board {
   isComplete() {
     // Make sure all cells are filled
     if (
-      !this.data.every((row, y) => row.every((cell, x) => (WALL + COLORS).includes(cell.color)))
+      !this.data.every((row, y) =>
+        row.every((cell, x) => (WALL + COLORS).includes(cell.color))
+      )
     ) {
       return false;
     }
@@ -270,13 +276,16 @@ export class Board {
         if (isEqual(newPos, pos2)) {
           return true;
         }
-        const unexploredNeighbors = this.getNeighborCells(newPos).filter((neighborCell) => {
-          return (
-            (EMPTY.includes(neighborCell.color) || neighborCell.color === cell1.color) &&
-            !filledPositions.has(neighborCell.position) &&
-            !growingEdge.has(neighborCell.position)
-          );
-        });
+        const unexploredNeighbors = this.getNeighborCells(newPos).filter(
+          (neighborCell) => {
+            return (
+              (EMPTY.includes(neighborCell.color) ||
+                neighborCell.color === cell1.color) &&
+              !filledPositions.has(neighborCell.position) &&
+              !growingEdge.has(neighborCell.position)
+            );
+          }
+        );
         unexploredNeighbors.forEach((cell) => growingEdge.add(cell.position));
         filledPositions.add(newPos);
         growingEdge.delete(newPos);
@@ -400,7 +409,9 @@ export class Board {
     // Check if any paths have been isolated from their other halves
     // 1. Find the two unjoined tail ends of each current incomplete line
     const hasPathBetweenTails = tails.every((tailCell1) => {
-      const tailCell2 = tails.find((cell) => cell.color === tailCell1.color && cell !== tailCell1);
+      const tailCell2 = tails.find(
+        (cell) => cell.color === tailCell1.color && cell !== tailCell1
+      );
       if (!tailCell2) return false;
       // 2. Run A* to find a path between the tails. If no path, then invalid
       return this.canConnect(tailCell1.position, tailCell2.position);
@@ -415,7 +426,8 @@ export class Board {
     const simplifiedColorOrderings = this.simplifyEdgeColorOrderings(areaColorSets);
     if (
       simplifiedColorOrderings.some(
-        (ordering) => ordering.perimeterColors.length > 0 || ordering.lineColors.size === 0
+        (ordering) =>
+          ordering.perimeterColors.length > 0 || ordering.lineColors.size === 0
       )
     ) {
       return false;
@@ -450,7 +462,10 @@ export class Board {
     const directions = this.rules.getNeighborDirections(position);
     return directions
       .filter((direction) => {
-        const newPosition = { x: position.x + direction.dx, y: position.y + direction.dy };
+        const newPosition = {
+          x: position.x + direction.dx,
+          y: position.y + direction.dy,
+        };
         if (!this.isValidPosition(newPosition)) return false;
         if (!this.getCell(newPosition).isEmpty()) return false;
         const hypotheticalBoard = new Board(this.data, this.rules);

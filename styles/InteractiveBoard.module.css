@@ -1,0 +1,14 @@
+.board {
+  padding: 10px;
+}
+
+.gridBoard {
+  display: grid;
+  width: fit-content;
+  /* grid-template-columns: 1fr;
+  grid-template-rows: 1fr; */
+}
+
+/* .grid-row {
+  display: flex;
+} */

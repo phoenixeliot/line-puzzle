@@ -1,5 +1,5 @@
 import { Position, Board } from "./Board";
-import { COLORS, EMPTY } from "./constants";
+import { COLORS, EMPTY, WALL } from "./constants";
 
 /*
 Terminology:
@@ -10,16 +10,38 @@ Wall - An unusable cell on the board; an obstacle
 Active cell - One that can still make connections. Empty, or a tail.
 */
 
+export enum CellType {
+  EMPTY = "EMPTY",
+  WALL = "WALL",
+  LINE_SEGMENT = "LINE_SEGMENT",
+  ENDPOINT = "ENDPOINT",
+  UNKNOWN = "UNKNOWN",
+}
+
 export class Cell {
   color: string;
   position: Position;
   isEndpoint: boolean;
   board: Board;
+  type: CellType;
 
   constructor({ color, position, isEndpoint, board }) {
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
+
+    // TODO: Clean up redundancy between this and the methods for checking cell type
+    if (this.isEmpty()) {
+      this.type = CellType.EMPTY;
+    } else if (this.isWall()) {
+      this.type = CellType.WALL;
+    } else if (this.isEndpoint) {
+      this.type = CellType.ENDPOINT;
+    } else if (this.hasLine()) {
+      this.type = CellType.LINE_SEGMENT;
+    } else {
+      this.type = CellType.UNKNOWN;
+    }
 
     // Set Board separately so it doesn't get enumerated by toJSON
     Object.defineProperty(this, "board", {
@@ -33,12 +55,15 @@ export class Cell {
     if (!COLORS.includes(this.color)) {
       return false;
     }
-    const numSameColorNeighbors = this.board.getSameColorNeighborCells(this.position).length;
+    const numSameColorNeighbors = this.board.getSameColorNeighborCells(
+      this.position
+    ).length;
     return (
       // If it's a lone endpoint with no line segments attached
       numSameColorNeighbors === 0 ||
       // Or it's a line segment with only one connection
-      (this.board.getSameColorNeighborCells(this.position).length === 1 && !this.isEndpoint)
+      (this.board.getSameColorNeighborCells(this.position).length === 1 &&
+        !this.isEndpoint)
     );
   }
 
@@ -46,8 +71,16 @@ export class Cell {
     return COLORS.includes(this.color);
   }
 
+  isKnownType() {
+    return [...COLORS, ...WALL, ...EMPTY].includes(this.color);
+  }
+
   isEmpty() {
     return EMPTY.includes(this.color);
+  }
+
+  isWall() {
+    return WALL.includes(this.color);
   }
 
   getNeighbors() {

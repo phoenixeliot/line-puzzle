@@ -1,0 +1,41 @@
+.gridCell {
+  outline: 1px solid gray;
+  margin: 0.5px; /* must be half of the outline width */
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: monospace;
+  line-height: 0; /* hack to make vertical centering not be 1px off at low res */
+  user-select: none;
+}
+
+.wall {
+  background-color: lightgray;
+}
+
+.innerDot {
+  border-radius: 9999px;
+  width: 70%;
+  height: 70%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.outerSVG {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+  outline-color: red;
+}
+
+.text {
+  font-size: 1px;
+}

@@ -1,5 +1,4 @@
 import path from "path";
-import fs from "fs";
 
 export const WALL = "#";
 export const ENDPOINT_COLORS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -7,7 +6,8 @@ export const PATH_COLORS = "abcdefghijklmnopqrstuvwxyz";
 export const COLORS = ENDPOINT_COLORS + PATH_COLORS;
 export const EMPTY = "-";
 
-const unicodeDataText = fs.readFileSync(path.resolve(__dirname, "UnicodeData.txt"), "utf8");
+// const unicodeDataText = fs.readFileSync(path.resolve(__dirname, "UnicodeData.txt"), "utf8");
+import unicodeDataText from "./UnicodeData.js";
 const unicodeData = unicodeDataText
   .split("\n")
   .map((line) => {
