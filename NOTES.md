@@ -107,6 +107,10 @@ Asked [on discord](https://discord.com/channels/713475280219537500/7134890390003
 >
 > Currently the closest I have is just identifying the ordering of any outer perimeters (which lets me resolve trivial impossibilities when doing on-the-grid searching, when I fully cut off one area from another) but that's just a special case of this general thing"
 
+Other example levels to play with:
+
+- grid 8x8 level 7
+
 (discussing grid 10x10 level 23)
 
 ```
@@ -145,3 +149,23 @@ So I think that's really only like 4 total topologies, from combinations of thos
 Not sure how to account for bits like: on the pink/blue island, pink could come out the right and blue could come out the left and wrap around pink. I think in this case that's equivalent because it's just a 2-island and in this abstracted topology you can just rotate those freely?
 
 Some attempts at how one could represent this graph:
+Island: OOGKYCRBRCYKCO (from top clockwise, double-counting both sides of pink, cyan, red)
+Island: BY
+Island: BK
+Island: G
+Perimeter: RB
+
+O1 -> O2
+O2 -> O1
+G1 -> G2
+K1 <-> K2;B1 <-> B2;Y2 <-> Y1
+// Y1; part of above loop
+C1 <-> C2 [contains O,G]
+R1 <-> R2
+// B1 Part of above loop
+R2 <-> R1
+C2 <-> C1
+// Y2 Part of above loop
+K
+C
+O
