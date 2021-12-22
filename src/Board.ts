@@ -57,6 +57,10 @@ export class AreaColors {
 export class Board {
   data: Array<Array<Cell>>;
   rules: Rules;
+  dimensions: {
+    width: number;
+    height: number;
+  };
   colors: Set<string>;
   consoleColorMap = {
     "-": ["dim"],
@@ -97,7 +101,8 @@ export class Board {
   init(data, rules: Rules) {
     this.data = data;
     this.rules = rules;
-    this.colors = this.getColors();
+    this.dimensions = this._getDimensions();
+    this.colors = this._getColors();
   }
 
   static fromString(boardString, rules: Rules) {
@@ -192,13 +197,27 @@ export class Board {
     );
   }
 
-  getColors() {
+  _getColors() {
     return new Set(
       this.data
         .flat()
         .map((cell) => cell.color)
         .filter((color) => COLORS.includes(color))
     );
+  }
+
+  _getDimensions() {
+    let width = 0;
+    let height = 0;
+    for (const cell of this.iterateCells()) {
+      if (cell.position.x + 1 > width) {
+        width = cell.position.x + 1;
+      }
+      if (cell.position.y + 1 > height) {
+        height = cell.position.y + 1;
+      }
+    }
+    return { width, height };
   }
 
   *iterateFilledCells() {
@@ -243,7 +262,7 @@ export class Board {
       return false;
     }
     // Make sure every color has a path along itself to all other cells of that color
-    return Array.from(this.getColors()).every((color) => {
+    return Array.from(this.colors).every((color) => {
       // Each color should have exactly 2 cells with 1 connection to its own color each, and all the rest should have 2 connections.
       const counts = new Set(
         Array.from(this.iterateCells())

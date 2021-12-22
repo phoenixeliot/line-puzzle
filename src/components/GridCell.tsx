@@ -50,7 +50,6 @@ export default function GridCell({
     gridArea: `${position.y + 1} / ${position.x + 1} / span 1 / span 1`,
   };
   let wrapperClassName = "";
-  console.log({ type, gridStyle: style });
   if (type === CellType.WALL) {
     wrapperClassName = clsx([styles.gridCell, styles.wall]);
   } else if (type === CellType.EMPTY) {

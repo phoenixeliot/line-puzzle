@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, { CSSProperties } from "react";
+import React, { CSSProperties, useEffect } from "react";
 import styles from "../../styles/InteractiveBoard.module.css";
 import { Board } from "../Board";
 import { Cell } from "../Cell";
@@ -23,7 +23,7 @@ const CSS_COLOR_MAP = {
 
 export default function InteractiveBoard({
   board,
-  style,
+  style = {},
 }: {
   board: Board;
   style?: CSSProperties;

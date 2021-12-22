@@ -27,7 +27,9 @@ export class Area {
     this.positions = positions;
     this.perimeter = perimeter;
     const perimeterSet = new SerializedSet<Position>(perimeter);
-    this.body = new SerializedSet(Array.from(positions.filter((p) => !perimeterSet.has(p))));
+    this.body = new SerializedSet(
+      Array.from(positions.filter((p) => !perimeterSet.has(p)))
+    );
   }
 
   toString(board): string {
@@ -58,7 +60,8 @@ export class Area {
     const board = cell.board;
     if (!cell.isActive()) {
       throw Error(
-        "Invalid starting cell for finding an area (cell is not active)" + JSON.stringify(cell)
+        "Invalid starting cell for finding an area (cell is not active)" +
+          JSON.stringify(cell)
       );
     }
 
@@ -70,13 +73,15 @@ export class Area {
         // Don't explore "through" tails; tails can close off an area from another.
         if (board.getCell(newPos).isEmpty()) {
           // Breadth-first include all active neighbors in the space to explore
-          const unexploredNeighbors = cell.board.getNeighborCells(newPos).filter((neighborCell) => {
-            return (
-              neighborCell.isActive() &&
-              !filledPositions.has(neighborCell.position) &&
-              !growingEdge.has(neighborCell.position)
-            );
-          });
+          const unexploredNeighbors = cell.board
+            .getNeighborCells(newPos)
+            .filter((neighborCell) => {
+              return (
+                neighborCell.isActive() &&
+                !filledPositions.has(neighborCell.position) &&
+                !growingEdge.has(neighborCell.position)
+              );
+            });
           unexploredNeighbors.forEach((cell) => growingEdge.add(cell.position));
         }
         filledPositions.add(newPos);
@@ -180,7 +185,9 @@ export class Area {
         }
       }
       if (!foundNext) {
-        throw new Error("Didn't find next item on perimeter path — this should not happen.");
+        throw new Error(
+          "Didn't find next item on perimeter path — this should not happen."
+        );
       }
       if (isEqual(nextNeighbor, perimeterStart)) {
         break;

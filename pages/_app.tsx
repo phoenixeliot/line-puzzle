@@ -3,7 +3,9 @@ import type { AppProps } from "next/app";
 
 // Disable server side rendering for debugging
 function SafeHydrate({ children }) {
-  return <div suppressHydrationWarning>{typeof window === "undefined" ? null : children}</div>;
+  return (
+    <div suppressHydrationWarning>{typeof window === "undefined" ? null : children}</div>
+  );
 }
 
 function MyApp({ Component, pageProps }: AppProps) {

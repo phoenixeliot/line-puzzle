@@ -109,20 +109,20 @@ describe("Board", () => {
             O--
           `,
           gridRules
-        ).getColors()
+        )._getColors()
       ).toEqual(new Set(["B", "Y", "O"]));
     });
   });
   describe("canConnect", () => {
     it("detects unconnectable paths", () => {
-      expect(Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(
-        false
-      );
+      expect(
+        Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+      ).toBe(false);
     });
     it("detects connectable paths", () => {
-      expect(Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(
-        true
-      );
+      expect(
+        Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+      ).toBe(true);
     });
   });
   describe("getOpenAreas", () => {
@@ -261,7 +261,10 @@ describe("Board", () => {
       expect(
         board.simplifyEdgeColorOrderings([
           new AreaColors({ perimeterColors: ["R", "O", "R", "O"] }),
-          new AreaColors({ perimeterColors: ["R", "Y", "R"], innerColors: new Set(["Y"]) }),
+          new AreaColors({
+            perimeterColors: ["R", "Y", "R"],
+            innerColors: new Set(["Y"]),
+          }),
         ])
       ).toMatchObject([{ perimeterColors: [] }, { perimeterColors: [] }]);
     });
@@ -320,7 +323,9 @@ describe("Board", () => {
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
-        return new AreaColors({ perimeterColors: board.getEdgeColorOrdering(area.perimeter) });
+        return new AreaColors({
+          perimeterColors: board.getEdgeColorOrdering(area.perimeter),
+        });
       });
       const simplifiedColorOrderings = board.simplifyEdgeColorOrderings(colorOrderings);
       expect(simplifiedColorOrderings).not.toMatchObject([
