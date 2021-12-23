@@ -25,11 +25,15 @@ export default function InteractiveBoard({
   board,
   style = {},
   connectPathToPosition,
+  pushColor,
 }: {
   board: Board;
   style?: CSSProperties;
   connectPathToPosition: (pos1: Position, pos2: Position, color: string) => boolean;
+  pushColor: any;
 }) {
+  const [useAutoPathing, setUseAutoPathing] = React.useState(false);
+  const [usePushMode, setUsePushMode] = React.useState(true);
   const defaultDragState = {
     dragging: false,
     color: null,
@@ -60,13 +64,20 @@ export default function InteractiveBoard({
       position: newPosition,
     };
     if (cell.color !== dragState.color) {
-      const success = connectPathToPosition(prevPosition, newPosition, dragState.color);
-      console.log(
-        `Searching for path from ${JSON.stringify(prevPosition)} to ${JSON.stringify(
-          newPosition
-        )} with color ${dragState.color}: Success=${success}`
-      );
-      if (success) {
+      // TODO: turn these into reducers or something
+      if (useAutoPathing) {
+        const success = connectPathToPosition(prevPosition, newPosition, dragState.color);
+        console.log(
+          `Searching for path from ${JSON.stringify(prevPosition)} to ${JSON.stringify(
+            newPosition
+          )} with color ${dragState.color}: Success=${success}`
+        );
+        if (success) {
+          newState.lastPlayablePosition = newPosition;
+        }
+      }
+      if (usePushMode) {
+        pushColor(newPosition, dragState.color);
         newState.lastPlayablePosition = newPosition;
       }
     }

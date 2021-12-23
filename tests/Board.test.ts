@@ -1041,7 +1041,7 @@ describe("Board", () => {
   });
 });
 
-fdescribe("findPath", () => {
+describe("findPath", () => {
   it("finds a trivial horizontal path", () => {
     const board = Board.fromString(
       dedent`
@@ -1168,5 +1168,80 @@ fdescribe("findPath", () => {
       const path = board.findPath({ x: 5, y: 0 }, { x: 0, y: 1 });
       expect(path).toEqual(null);
     }
+  });
+});
+
+fdescribe("pushColor", () => {
+  it("pushes a line further away from below", () => {
+    const board = Board.fromString(
+      dedent`
+      -----
+      -----
+      BbbbB
+      --Y--
+      `,
+      gridRules
+    );
+    board.pushColor({ x: 2, y: 2 }, "Y");
+    expect(board.toString()).toEqual(dedent`
+    -----
+    -bbb-
+    BbybB
+    --Y--
+    `);
+  });
+  it("pushes a line further away from above", () => {
+    const board = Board.fromString(
+      dedent`
+      --Y--
+      BbbbB
+      -----
+      -----
+      `,
+      gridRules
+    );
+    board.pushColor({ x: 2, y: 1 }, "Y");
+    expect(board.toString()).toEqual(dedent`
+    --Y--
+    BbybB
+    -bbb-
+    -----
+    `);
+  });
+  it("pushes lines around obstacles", () => {
+    const board = Board.fromString(
+      dedent`
+      --Y--
+      BbbbB
+      --#--
+      -----
+      `,
+      gridRules
+    );
+    board.pushColor({ x: 2, y: 1 }, "Y");
+    expect(board.toString()).toEqual(dedent`
+    --Y--
+    BbybB
+    -b#b-
+    -bbb-
+    `);
+  });
+  it("pushes two sets of lines away", () => {
+    const board = Board.fromString(
+      dedent`
+      --Y--
+      BbbbB
+      RrrrR
+      -----
+      `,
+      gridRules
+    );
+    board.pushColor({ x: 2, y: 1 }, "Y");
+    expect(board.toString()).toEqual(dedent`
+    --Y--
+    BbybB
+    RbbbR
+    rrrrr
+    `);
   });
 });

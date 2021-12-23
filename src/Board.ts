@@ -190,6 +190,31 @@ export class Board {
     this.getCell(position).color = color;
   }
 
+  // TODO: Refactor once I have connections embedded in the data
+  getConnections(position: Position): Array<Position> {
+    const cell = this.getCell(position);
+    if (!cell.hasLine()) return []; // For walls, etc
+    return this.getNeighborCells(position)
+      .filter((neighborCell) => {
+        return neighborCell.hasLine() && neighborCell.color == cell.color;
+      })
+      .map((c) => c.position);
+  }
+
+  pushColor(position: Position, color: string): boolean {
+    const connections = this.getConnections(position);
+    this.setColor(position, color);
+    console.log(connections);
+    if (connections.length == 2) {
+      this.connectPathToPosition(
+        connections[0],
+        connections[1],
+        this.getCell(connections[0]).color
+      );
+    }
+    return true;
+  }
+
   connectPathToPosition(prevPosition, newPosition, color): boolean {
     if (this.getCell(prevPosition).color !== color) {
       return false;

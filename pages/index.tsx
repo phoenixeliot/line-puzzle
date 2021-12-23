@@ -12,8 +12,10 @@ const Home: NextPage = () => {
   const [board, setBoard] = React.useState(
     Board.fromString(
       dedent`
-      B-#-B
-      Y---Y
+      -----
+      -----
+      BbbbB
+      --Y--
       `,
       gridRules
     )
@@ -39,12 +41,19 @@ const Home: NextPage = () => {
     if (success) setBoard(newBoard);
     return success;
   };
+  const pushColor = (position: Position, color: string): boolean => {
+    const newBoard = board.clone();
+    const success = newBoard.pushColor(position, color);
+    if (success) setBoard(newBoard);
+    return success;
+  };
   return (
     <div className={styles.page}>
       <InteractiveBoard
         board={board}
         connectPathToPosition={connectPathToPosition}
-        style={{ width: "1400px", maxWidth: "100vw", maxHeight: "100vh" }}
+        pushColor={pushColor}
+        style={{ height: "400px", maxWidth: "100vw", maxHeight: "100vh" }}
       />
       <button onClick={solveChoicelessMoves}>Solve choiceless moves</button>
     </div>
