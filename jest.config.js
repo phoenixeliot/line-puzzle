@@ -3,6 +3,8 @@ module.exports = {
   preset: "ts-jest",
   transform: {
     "^.+\\.(t|j)sx?$": "@swc/jest",
+    // "^.+\\.sx?$": "babel-jest",
+    // "^.+\\.tsx?$": "ts-jest",
   },
   testEnvironment: "node",
   testMatch: ["**/__tests__/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).?(m)[jt]s?(x)"],

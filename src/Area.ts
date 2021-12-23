@@ -32,7 +32,7 @@ export class Area {
     );
   }
 
-  toString(board): string {
+  toString(board?: Board): string {
     const grid = [];
     if (board) {
       for (const cell of board.iterateCells()) {

@@ -36,6 +36,31 @@ export interface Rules {
   getNeighborDirections: (pos: Position) => Array<PositionDelta>;
 }
 
+export class Path extends Array<Position> {
+  toString(board?: Board): string {
+    const grid = [];
+    // Fill in the background area
+    const allBoardPositions = board
+      ? Array.from(board.iterateCells()).map((c) => c.position)
+      : this;
+    const maxX = allBoardPositions.map((p) => p.x).reduce((a, b) => Math.max(a, b), 0);
+    const maxY = allBoardPositions.map((p) => p.y).reduce((a, b) => Math.max(a, b), 0);
+    for (let y = 0; y <= maxY; y++) {
+      if (!grid[y]) {
+        grid[y] = [];
+      }
+      for (let x = 0; x <= maxX; x++) {
+        grid[y][x] = "-";
+      }
+    }
+    // Fill in the path itself
+    for (const position of this) {
+      grid[position.y][position.x] = "@";
+    }
+    return grid.map((row) => row.join("")).join("\n");
+  }
+}
+
 export class AreaColors {
   originalPerimeterColors: Array<string>;
   perimeterColors: Array<string>;
@@ -163,6 +188,68 @@ export class Board {
 
   setColor(position: Position, color: string) {
     this.getCell(position).color = color;
+  }
+
+  connectPathToPosition(prevPosition, newPosition, color) {
+    if (this.getCell(prevPosition).color !== color) {
+      throw new Error(
+        `Trying to connect path with mismatching color: ${
+          this.getCell(prevPosition).color
+        } !== ${color}`
+      );
+    }
+  }
+
+  // TODO: Implement highly generic/configurable A*
+  findPath(pos1, pos2): Path {
+    type Path = Array<Position>;
+    const rules = {
+      // fn: get positions I can move to in 1 step from this position
+      getNextMoves: (path) => {
+        const pos = path.at(-1);
+        const candidatePositions = this.getNeighborPositions(pos);
+        const newPositions = candidatePositions.filter((pos) => {
+          const cell = this.getCell(pos);
+          return (
+            this.isValidPosition(pos) &&
+            // !isEqual(pos, path.at(-2)) &&
+            !path.some((prevPos) => isEqual(pos, prevPos)) &&
+            (cell.isEmpty() || (cell.isTail() && cell.color === this.getCell(pos1).color))
+          );
+        });
+        return newPositions.map((newPos) => {
+          return path.concat([newPos]);
+        });
+      },
+      // fn: partial solution quality heuristic (what properties must it have to guarantee optimality, again?)
+      // Smaller is better
+      partialQualityHeuristic: (path) => {
+        const pos = path.at(-1);
+        const euclideanDistanceRemaining =
+          Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
+        return path.length + euclideanDistanceRemaining;
+      },
+    };
+
+    const paths: Array<Path> = [[pos1]];
+    while (true) {
+      // Sort backwards so we can pop cheaply. Best paths are at the end.
+      paths.sort(
+        (a, b) => -(rules.partialQualityHeuristic(a) - rules.partialQualityHeuristic(b))
+      );
+      const path = paths.pop();
+
+      // Check finish conditions
+      if (!path) return null; // We've run out of paths to try
+      if (isEqual(path.at(-1), pos2)) return Path.from(path); // We've found the exit
+
+      // Add the new frontier of paths
+      // TODO: Consider using a Map to make each cell have only one best path, no multiple paths going through the same cell
+      const newPaths = rules.getNextMoves(path);
+      for (const newPath of newPaths) {
+        paths.push(newPath);
+      }
+    }
   }
 
   getCell(position: Position) {

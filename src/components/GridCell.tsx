@@ -9,7 +9,7 @@ function pathsFromConnections(connections, color) {
     const pathString = `M0,0 l${dir.dx},${dir.dy}`;
     return (
       <path
-        key={JSON.stringify(dir)}
+        key={`${dir.dx},${dir.dy}`}
         d={pathString}
         stroke={color}
         strokeLinecap="round"
@@ -50,7 +50,13 @@ export default function GridCell({
     wrapperClassName = clsx([styles.gridCell]);
     svgChildren.push(pathsFromConnections(connections, pathColor));
     svgChildren.push(
-      <path d="M0,0 l0,0" stroke={pathColor} strokeLinecap="round" strokeWidth="1.5" />
+      <path
+        key="endpoint"
+        d="M0,0 l0,0"
+        stroke={pathColor}
+        strokeLinecap="round"
+        strokeWidth="1.5"
+      />
     );
   } else {
     wrapperClassName = clsx([styles.gridCell, styles.error]);
@@ -61,6 +67,7 @@ export default function GridCell({
   if (cellText) {
     svgChildren.push(
       <text
+        key="text"
         className={styles.text}
         fill={textColor}
         textAnchor="middle"
@@ -71,7 +78,11 @@ export default function GridCell({
     );
   }
   return (
-    <div style={style} className={wrapperClassName}>
+    <div
+      style={style}
+      className={wrapperClassName}
+      data-cellpos={JSON.stringify(cell.position)}
+    >
       <svg
         className={styles.outerSVG}
         viewBox="-1 -1 2 2" // x, y, width, height

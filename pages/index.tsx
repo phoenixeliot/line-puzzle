@@ -12,22 +12,33 @@ const Home: NextPage = () => {
   const [board, setBoard] = React.useState(
     Board.fromString(
       dedent`
-      BYO-O-
-      byy---
-      B##--Y
+      B---B
+      Y---Y
       `,
       gridRules
     )
   );
+  // TODO: Figure out a good way to track board state in React/Redux-y way
   const solveChoicelessMoves = () => {
     const newBoard = board.clone();
     newBoard.solveChoicelessMoves();
+    setBoard(newBoard);
+  };
+  const setColor = (position, color) => {
+    const newBoard = board.clone();
+    newBoard.setColor(position, color);
+    setBoard(newBoard);
+  };
+  const connectPathToPosition = (prevPosition, newPosition, color) => {
+    const newBoard = board.clone();
+    newBoard.connectPathToPosition(prevPosition, newPosition, color);
     setBoard(newBoard);
   };
   return (
     <div className={styles.page}>
       <InteractiveBoard
         board={board}
+        setColor={setColor}
         style={{ width: "1400px", maxWidth: "100vw", maxHeight: "100vh" }}
       />
       <button onClick={solveChoicelessMoves}>Solve choiceless moves</button>

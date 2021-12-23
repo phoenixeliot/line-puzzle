@@ -1,4 +1,4 @@
-import { dedent } from "../utils.js";
+import { dedent } from "../utils";
 
 export default {
   type: "hex",

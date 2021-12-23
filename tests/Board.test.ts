@@ -1040,3 +1040,109 @@ describe("Board", () => {
     }, 1000);
   });
 });
+
+fdescribe("findPath", () => {
+  it("finds a trivial horizontal path", () => {
+    const board = Board.fromString(
+      dedent`
+      B--B
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 0 }, { x: 3, y: 0 });
+    expect(path).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 2, y: 0 },
+      { x: 3, y: 0 },
+    ]);
+  });
+  it("finds a trivial vertical path", () => {
+    const board = Board.fromString(
+      dedent`
+      B
+      -
+      -
+      B
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 0 }, { x: 0, y: 3 });
+    expect(path).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 0, y: 3 },
+    ]);
+  });
+  it("paths around an obstacle", () => {
+    const board = Board.fromString(
+      dedent`
+      B#B
+      ---
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
+    expect(path).toEqual([
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 2, y: 0 },
+    ]);
+  });
+  it("paths around other colors", () => {
+    const board = Board.fromString(
+      dedent`
+      BYB
+      -y-
+      ---
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
+    expect(path).toHaveLength(7);
+    expect(path.toString(board)).toEqual(dedent`
+    @-@
+    @-@
+    @@@
+    `);
+  });
+  it("paths through an open space", () => {
+    const board = Board.fromString(
+      dedent`
+      B----
+      -----
+      -----
+      -----
+      ----B
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 0 }, { x: 4, y: 4 });
+    expect(path).toHaveLength(9);
+    console.log(path.toString());
+  });
+  it("paths through winding branches", () => {
+    const board = Board.fromString(
+      dedent`
+      ###---
+      #---#-
+      B-#--B
+      #---#-
+      ###---
+      `,
+      gridRules
+    );
+    const path = board.findPath({ x: 0, y: 2 }, { x: 5, y: 2 });
+    expect(path).toHaveLength(8);
+    expect(path.toString(board)).toEqual(dedent`
+    ------
+    ------
+    @@-@@@
+    -@@@--
+    ------
+    `);
+  });
+});
