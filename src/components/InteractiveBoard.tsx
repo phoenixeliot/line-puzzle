@@ -24,11 +24,13 @@ const CSS_COLOR_MAP = {
 export default function InteractiveBoard({
   board,
   style = {},
+  connectPathWithPushing,
   connectPathToPosition,
   pushColor,
 }: {
   board: Board;
   style?: CSSProperties;
+  connectPathWithPushing: (pos1: Position, pos2: Position, color: string) => boolean;
   connectPathToPosition: (pos1: Position, pos2: Position, color: string) => boolean;
   pushColor: any;
 }) {
@@ -66,7 +68,11 @@ export default function InteractiveBoard({
     if (cell.color !== dragState.color) {
       // TODO: turn these into reducers or something
       if (useAutoPathing) {
-        const success = connectPathToPosition(prevPosition, newPosition, dragState.color);
+        const success = connectPathWithPushing(
+          prevPosition,
+          newPosition,
+          dragState.color
+        );
         console.log(
           `Searching for path from ${JSON.stringify(prevPosition)} to ${JSON.stringify(
             newPosition

@@ -201,36 +201,76 @@ export class Board {
       .map((c) => c.position);
   }
 
-  pushColor(position: Position, color: string): boolean {
+  pushColor(position: Position, color: string, avoidColors: Array<string> = []): boolean {
     const connections = this.getConnections(position);
     this.setColor(position, color);
-    console.log(connections);
+    console.log("===============");
+    console.log(this.toString());
+    // debugger;
+    // console.log(connections);
     if (connections.length == 2) {
-      this.connectPathToPosition(
+      this.connectPathWithPushing(
         connections[0],
         connections[1],
-        this.getCell(connections[0]).color
+        this.getCell(connections[0]).color,
+        avoidColors.concat([color])
       );
     }
     return true;
   }
 
-  connectPathToPosition(prevPosition, newPosition, color): boolean {
-    if (this.getCell(prevPosition).color !== color) {
+  connectPathWithPushing(pos1, pos2, color, avoidColors = []): boolean {
+    if (this.getCell(pos1).color !== color) {
       return false;
     }
-    const path = this.findPath(prevPosition, newPosition);
+    const allowOtherColorCollisionRules = {
+      // fn: get positions I can move to in 1 step from this position
+      getNextMoves: (path) => {
+        const pos = path.at(-1);
+        const candidatePositions = this.getNeighborPositions(pos);
+        const newPositions = candidatePositions.filter((newPos) => {
+          const cell = this.getCell(newPos);
+          if (isEqual(pos, { x: 4, y: 3 })) debugger;
+          return (
+            this.isValidPosition(newPos) &&
+            // !isEqual(pos, path.at(-2)) &&
+            !path.some((prevPos) => isEqual(newPos, prevPos)) &&
+            // Don't path through the currently pushing path, except to finish connecting
+            (cell.color !== color || cell.isTail()) &&
+            // Don't push through immovable cells
+            !(cell.color !== color && cell.isEndpoint) &&
+            !avoidColors.includes(cell.color)
+          );
+        });
+        return newPositions.map((newPos) => {
+          return path.concat([newPos]);
+        });
+      },
+      // fn: partial solution quality heuristic (what properties must it have to guarantee optimality, again?)
+      // Smaller is better
+      partialQualityHeuristic: (path) => {
+        const pos = path.at(-1);
+        const euclideanDistanceRemaining =
+          Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
+        return path.length + euclideanDistanceRemaining;
+      },
+    };
+    // debugger;
+    const path = this.findPath(pos1, pos2, allowOtherColorCollisionRules);
     if (!path) return false; // No path was found
     for (const pos of path) {
-      this.setColor(pos, color);
+      const cell = this.getCell(pos);
+      if (cell.color === color) continue; // Skip if it's already colored correctly
+      this.pushColor(pos, color, avoidColors.concat([color]));
     }
     return true;
   }
 
-  // TODO: Implement highly generic/configurable A*
-  findPath(pos1, pos2): Path {
-    type Path = Array<Position>;
-    const rules = {
+  connectPathToPosition(pos1, pos2, color): boolean {
+    if (this.getCell(pos1).color !== color) {
+      return false;
+    }
+    const noCollisionSearchRules = {
       // fn: get positions I can move to in 1 step from this position
       getNextMoves: (path) => {
         const pos = path.at(-1);
@@ -257,13 +297,31 @@ export class Board {
         return path.length + euclideanDistanceRemaining;
       },
     };
+    const path = this.findPath(pos1, pos2, noCollisionSearchRules);
+    if (!path) return false; // No path was found
+    for (const pos of path) {
+      this.setColor(pos, color);
+    }
+    return true;
+  }
 
+  // TODO: Implement highly generic/configurable A*
+  findPath(pos1, pos2, rules): Path {
+    // debugger;
     const paths: Array<Path> = [[pos1]];
     while (true) {
       // Sort backwards so we can pop cheaply. Best paths are at the end.
       paths.sort(
         (a, b) => -(rules.partialQualityHeuristic(a) - rules.partialQualityHeuristic(b))
       );
+      console.log("===============");
+      for (const path of paths) {
+        console.log(
+          rules.partialQualityHeuristic(path),
+          path.map((p) => JSON.stringify(p)).join("\n")
+        );
+      }
+      // debugger;
       const path = paths.pop();
 
       // Check finish conditions

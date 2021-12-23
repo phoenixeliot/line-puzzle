@@ -1244,4 +1244,42 @@ fdescribe("pushColor", () => {
     rrrrr
     `);
   });
+  it("causes a single color to snap around the other side", () => {
+    {
+      const board = Board.fromString(
+        dedent`
+      -----
+      --Y--
+      BbbbB
+      `,
+        gridRules
+      );
+      board.pushColor({ x: 2, y: 2 }, "Y");
+      expect(board.toString()).toEqual(dedent`
+      -bbb-
+      -bYb-
+      BbybB
+      `);
+    }
+  });
+  it("causes a second layer to snap around the other side", () => {
+    {
+      const board = Board.fromString(
+        dedent`
+        -------
+        ---Y---
+        -BbbbB-
+        -RrrrR-
+        `,
+        gridRules
+      );
+      board.pushColor({ x: 2, y: 2 }, "Y");
+      expect(board.toString()).toEqual(dedent`
+      --rrr--
+      rrrYrrr
+      rBbybBr
+      rRbbbRr
+      `);
+    }
+  });
 });

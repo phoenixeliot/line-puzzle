@@ -12,10 +12,10 @@ const Home: NextPage = () => {
   const [board, setBoard] = React.useState(
     Board.fromString(
       dedent`
-      -----
-      -----
-      BbbbB
-      --Y--
+      -------
+      ---Y---
+      -BbbbB-
+      -RrrrR-
       `,
       gridRules
     )
@@ -41,6 +41,16 @@ const Home: NextPage = () => {
     if (success) setBoard(newBoard);
     return success;
   };
+  const connectPathWithPushing = (
+    prevPosition: Position,
+    newPosition: Position,
+    color: string
+  ): boolean => {
+    const newBoard = board.clone();
+    const success = newBoard.connectPathWithPushing(prevPosition, newPosition, color);
+    if (success) setBoard(newBoard);
+    return success;
+  };
   const pushColor = (position: Position, color: string): boolean => {
     const newBoard = board.clone();
     const success = newBoard.pushColor(position, color);
@@ -51,6 +61,7 @@ const Home: NextPage = () => {
     <div className={styles.page}>
       <InteractiveBoard
         board={board}
+        connectPathWithPushing={connectPathWithPushing}
         connectPathToPosition={connectPathToPosition}
         pushColor={pushColor}
         style={{ height: "400px", maxWidth: "100vw", maxHeight: "100vh" }}
