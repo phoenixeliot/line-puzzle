@@ -202,11 +202,13 @@ export class Board {
   }
 
   pushColor(position: Position, color: string, avoidColors: Array<string> = []): boolean {
+    const cell = this.getCell(position);
+    if (cell.isEndpoint) return cell.color === color;
     const connections = this.getConnections(position);
     this.setColor(position, color);
     console.log("===============");
     console.log(this.toString());
-    // debugger;
+    debugger;
     // console.log(connections);
     if (connections.length == 2) {
       this.connectPathWithPushing(
@@ -230,7 +232,7 @@ export class Board {
         const candidatePositions = this.getNeighborPositions(pos);
         const newPositions = candidatePositions.filter((newPos) => {
           const cell = this.getCell(newPos);
-          if (isEqual(pos, { x: 4, y: 3 })) debugger;
+          // if (isEqual(pos, { x: 4, y: 3 })) debugger;
           return (
             this.isValidPosition(newPos) &&
             // !isEqual(pos, path.at(-2)) &&
@@ -296,6 +298,7 @@ export class Board {
           Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
         return path.length + euclideanDistanceRemaining;
       },
+      allowBacktracking: true,
     };
     const path = this.findPath(pos1, pos2, noCollisionSearchRules);
     if (!path) return false; // No path was found
@@ -309,6 +312,11 @@ export class Board {
   findPath(pos1, pos2, rules): Path {
     // debugger;
     const paths: Array<Path> = [[pos1]];
+    if (rules.allowBacktracking) {
+      // TODO: Get the current already-existing path on each end
+      // and include backtracks of those paths in the path list.
+      // May require refactoring to allow searching from both ends??
+    }
     while (true) {
       // Sort backwards so we can pop cheaply. Best paths are at the end.
       paths.sort(

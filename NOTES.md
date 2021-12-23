@@ -1,3 +1,16 @@
+# Interactive board
+
+- [x] Drag to color cells
+  - [ ] Don't allow branching; break old connections
+- [x] Implement basic push algorithm
+  - [x] Implement double layer pushing
+  - [ ] Implement backtracking to reconnect in pushed layers
+
+# Board class
+
+- [ ] Embed connections in the data (not just cell colors with inferred connections)
+- [ ] Implement path simplification (eg round off 4-square loops, 3-hex triangles)
+
 # Algorithm notes
 
 ## Board state validity checks
