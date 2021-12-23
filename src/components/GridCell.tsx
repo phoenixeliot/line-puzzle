@@ -2,7 +2,7 @@ import styles from "../../styles/GridCell.module.css";
 import clsx from "clsx";
 import { Cell, CellType } from "../Cell";
 import { PositionDelta } from "../Board";
-import { CSSProperties } from "react";
+import React, { CSSProperties } from "react";
 
 function pathsFromConnections(connections, color) {
   return connections.map((dir) => {
@@ -32,19 +32,8 @@ export default function GridCell({
   textColor?: string;
   cellText?: string;
 }) {
-  const type = cell.type;
-  const position = cell.position;
-  const OuterSVG = ({ children = null }) => (
-    <svg
-      className={styles.outerSVG}
-      viewBox="-1 -1 2 2" // x, y, width, height
-      width="1"
-      height="1"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {children}
-    </svg>
-  );
+  const { position } = cell;
+  const type = cell.getType();
   const svgChildren = [];
   const style: CSSProperties = {
     gridArea: `${position.y + 1} / ${position.x + 1} / span 1 / span 1`,
@@ -83,7 +72,15 @@ export default function GridCell({
   }
   return (
     <div style={style} className={wrapperClassName}>
-      <OuterSVG>{svgChildren}</OuterSVG>
+      <svg
+        className={styles.outerSVG}
+        viewBox="-1 -1 2 2" // x, y, width, height
+        width="1"
+        height="1"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {svgChildren}
+      </svg>
     </div>
   );
 }

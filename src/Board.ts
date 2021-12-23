@@ -105,6 +105,10 @@ export class Board {
     this.colors = this._getColors();
   }
 
+  clone() {
+    return new Board(this.data, this.rules);
+  }
+
   static fromString(boardString, rules: Rules) {
     const board = new Board();
     const boardData = boardString

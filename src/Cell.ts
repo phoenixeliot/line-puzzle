@@ -30,19 +30,6 @@ export class Cell {
     this.position = position;
     this.isEndpoint = isEndpoint;
 
-    // TODO: Clean up redundancy between this and the methods for checking cell type
-    if (this.isEmpty()) {
-      this.type = CellType.EMPTY;
-    } else if (this.isWall()) {
-      this.type = CellType.WALL;
-    } else if (this.isEndpoint) {
-      this.type = CellType.ENDPOINT;
-    } else if (this.hasLine()) {
-      this.type = CellType.LINE_SEGMENT;
-    } else {
-      this.type = CellType.UNKNOWN;
-    }
-
     // Set Board separately so it doesn't get enumerated by toJSON
     Object.defineProperty(this, "board", {
       enumerable: false,
@@ -65,6 +52,20 @@ export class Cell {
       (this.board.getSameColorNeighborCells(this.position).length === 1 &&
         !this.isEndpoint)
     );
+  }
+
+  getType() {
+    if (this.isEmpty()) {
+      return CellType.EMPTY;
+    } else if (this.isWall()) {
+      return CellType.WALL;
+    } else if (this.isEndpoint) {
+      return CellType.ENDPOINT;
+    } else if (this.hasLine()) {
+      return CellType.LINE_SEGMENT;
+    } else {
+      return CellType.UNKNOWN;
+    }
   }
 
   hasLine() {

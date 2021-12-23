@@ -31,7 +31,6 @@ export default function InteractiveBoard({
   return (
     <div className={clsx([styles.board, styles.gridBoard])} style={style}>
       {Array.from(board.iterateCells()).map((cell, cellIndex) => {
-        let type;
         // TODO: Bake connections into the cell data
         const connections = board.rules
           .getNeighborDirections(cell.position)
