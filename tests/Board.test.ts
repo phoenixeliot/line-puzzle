@@ -1145,4 +1145,28 @@ fdescribe("findPath", () => {
     ------
     `);
   });
+  it("doesn't path through its own pre-existing path", () => {
+    {
+      const board = Board.fromString(
+        dedent`
+        -bB--B
+        `,
+        gridRules
+      );
+      const path = board.findPath({ x: 0, y: 0 }, { x: 5, y: 0 });
+      expect(path).toEqual(null);
+    }
+    {
+      const board = Board.fromString(
+        dedent`
+        --#bbb
+        B--b--
+        --#B--
+        `,
+        gridRules
+      );
+      const path = board.findPath({ x: 5, y: 0 }, { x: 0, y: 1 });
+      expect(path).toEqual(null);
+    }
+  });
 });

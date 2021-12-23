@@ -24,17 +24,19 @@ const CSS_COLOR_MAP = {
 export default function InteractiveBoard({
   board,
   style = {},
-  setColor,
+  connectPathToPosition,
 }: {
   board: Board;
   style?: CSSProperties;
-  setColor: (position: Position, color: string) => void;
+  connectPathToPosition: (pos1: Position, pos2: Position, color: string) => boolean;
 }) {
-  const [dragState, setDragState] = React.useState({
+  const defaultDragState = {
     dragging: false,
     color: null,
     position: null,
-  });
+    lastPlayablePosition: null,
+  };
+  const [dragState, setDragState] = React.useState(defaultDragState);
   const startDrag = (event) => {
     const domCell = event.target.closest("[data-cellpos]");
     if (!domCell) return;
@@ -44,28 +46,37 @@ export default function InteractiveBoard({
       dragging: true,
       color: cell.color,
       position,
+      lastPlayablePosition: position,
     });
   };
   const continueDrag = (event) => {
     if (!dragState.dragging) return; // Do nothing if not already dragging
-    const position = JSON.parse(
-      event.target.closest("[data-cellpos]").getAttribute("data-cellpos")
-    );
-    const cell = board.getCell(position);
+    const prevPosition = dragState.lastPlayablePosition;
+    const domCell = event.target.closest("[data-cellpos]");
+    if (!domCell) return;
+    const newPosition = JSON.parse(domCell.getAttribute("data-cellpos"));
+    const cell = board.getCell(newPosition);
+    const newState: any = {
+      position: newPosition,
+    };
+    if (cell.color !== dragState.color) {
+      const success = connectPathToPosition(prevPosition, newPosition, dragState.color);
+      console.log(
+        `Searching for path from ${JSON.stringify(prevPosition)} to ${JSON.stringify(
+          newPosition
+        )} with color ${dragState.color}: Success=${success}`
+      );
+      if (success) {
+        newState.lastPlayablePosition = newPosition;
+      }
+    }
     setDragState({
       ...dragState,
-      position,
+      ...newState,
     });
-    if (cell.color !== dragState.color) {
-      setColor(position, dragState.color);
-    }
   };
   const stopDrag = (event) => {
-    setDragState({
-      dragging: false,
-      color: null,
-      position: null,
-    });
+    setDragState({ ...defaultDragState });
   };
   return (
     <>

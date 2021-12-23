@@ -190,14 +190,16 @@ export class Board {
     this.getCell(position).color = color;
   }
 
-  connectPathToPosition(prevPosition, newPosition, color) {
+  connectPathToPosition(prevPosition, newPosition, color): boolean {
     if (this.getCell(prevPosition).color !== color) {
-      throw new Error(
-        `Trying to connect path with mismatching color: ${
-          this.getCell(prevPosition).color
-        } !== ${color}`
-      );
+      return false;
     }
+    const path = this.findPath(prevPosition, newPosition);
+    if (!path) return false; // No path was found
+    for (const pos of path) {
+      this.setColor(pos, color);
+    }
+    return true;
   }
 
   // TODO: Implement highly generic/configurable A*

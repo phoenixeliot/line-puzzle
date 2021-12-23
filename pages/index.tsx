@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { Board } from "../src/Board";
+import { Board, Position } from "../src/Board";
 import InteractiveBoard from "../src/components/InteractiveBoard";
 import styles from "../styles/Home.module.css";
 import { dedent } from "../tests/utils";
@@ -12,7 +12,7 @@ const Home: NextPage = () => {
   const [board, setBoard] = React.useState(
     Board.fromString(
       dedent`
-      B---B
+      B-#-B
       Y---Y
       `,
       gridRules
@@ -29,16 +29,21 @@ const Home: NextPage = () => {
     newBoard.setColor(position, color);
     setBoard(newBoard);
   };
-  const connectPathToPosition = (prevPosition, newPosition, color) => {
+  const connectPathToPosition = (
+    prevPosition: Position,
+    newPosition: Position,
+    color: string
+  ): boolean => {
     const newBoard = board.clone();
-    newBoard.connectPathToPosition(prevPosition, newPosition, color);
-    setBoard(newBoard);
+    const success = newBoard.connectPathToPosition(prevPosition, newPosition, color);
+    if (success) setBoard(newBoard);
+    return success;
   };
   return (
     <div className={styles.page}>
       <InteractiveBoard
         board={board}
-        setColor={setColor}
+        connectPathToPosition={connectPathToPosition}
         style={{ width: "1400px", maxWidth: "100vw", maxHeight: "100vh" }}
       />
       <button onClick={solveChoicelessMoves}>Solve choiceless moves</button>
