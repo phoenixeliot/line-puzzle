@@ -56,9 +56,8 @@ export class Area {
     return new Set(cells.filter((c) => c.hasLine()).map((c) => c.color));
   }
 
-  static fromCell(cell: Cell): Area {
-    const board = cell.board;
-    if (!cell.isActive()) {
+  static fromCell(board: Board, cell: Cell): Area {
+    if (!cell.isActive(board)) {
       throw Error(
         "Invalid starting cell for finding an area (cell is not active)" +
           JSON.stringify(cell)
@@ -73,11 +72,11 @@ export class Area {
         // Don't explore "through" tails; tails can close off an area from another.
         if (board.getCell(newPos).isEmpty()) {
           // Breadth-first include all active neighbors in the space to explore
-          const unexploredNeighbors = cell.board
+          const unexploredNeighbors = board
             .getNeighborCells(newPos)
             .filter((neighborCell) => {
               return (
-                neighborCell.isActive() &&
+                neighborCell.isActive(board) &&
                 !filledPositions.has(neighborCell.position) &&
                 !growingEdge.has(neighborCell.position)
               );
@@ -100,7 +99,7 @@ export class Area {
     // Get the perimeter from the filled area (all cells that aren't surrounded by other cells in the area)
     const unorderedPerimeter = new SerializedSet(
       Array.from(filledPositions).filter((position) => {
-        return !cell.board.getNeighborCells(position).every((neighbor) => {
+        return !board.getNeighborCells(position).every((neighbor) => {
           filledPositions.has(neighbor.position);
         });
       })

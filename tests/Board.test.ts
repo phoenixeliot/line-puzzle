@@ -1,4 +1,5 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
+import isEqual from "lodash/isEqual";
 import { dedent } from "./utils";
 import { Area } from "../src/Area";
 import { AreaColors, Board } from "../src/Board";
@@ -799,7 +800,7 @@ describe("Board", () => {
       yyyRY
       `);
     });
-    it("solves a board with an unintuitive long outer edge", async () => {
+    xit("solves a board with an unintuitive long outer edge", async () => {
       const board = Board.fromString(
         dedent`
         Y---Y
@@ -1042,6 +1043,36 @@ describe("Board", () => {
 });
 
 describe("findPath", () => {
+  // TODO: Clean this up to be testable and reusable.
+  const noCollisionSearchRules = (board) => ({
+    // fn: get positions I can move to in 1 step from this position
+    getNextMoves: (path) => {
+      const pos = path.at(-1);
+      const candidatePositions = board.getNeighborPositions(pos);
+      const newPositions = candidatePositions.filter((pos) => {
+        const cell = board.getCell(pos);
+        return (
+          board.isValidPosition(pos) &&
+          // !isEqual(pos, path.at(-2)) &&
+          !path.some((prevPos) => isEqual(pos, prevPos)) &&
+          (cell.isEmpty() ||
+            (cell.isTail(board) && cell.color === board.getCell(pos).color))
+        );
+      });
+      return newPositions.map((newPos) => {
+        return path.concat([newPos]);
+      });
+    },
+    // fn: partial solution quality heuristic (what properties must it have to guarantee optimality, again?)
+    // Smaller is better
+    partialQualityHeuristic: (path, target) => {
+      const pos = path.at(-1);
+      const euclideanDistanceRemaining =
+        Math.abs(pos.x - target.x) + Math.abs(pos.y - target.y);
+      return path.length + euclideanDistanceRemaining;
+    },
+    allowBacktracking: true,
+  });
   it("finds a trivial horizontal path", () => {
     const board = Board.fromString(
       dedent`
@@ -1049,7 +1080,11 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 0 }, { x: 3, y: 0 });
+    const path = board.findPath(
+      { x: 0, y: 0 },
+      { x: 3, y: 0 },
+      noCollisionSearchRules(board)
+    );
     expect(path).toEqual([
       { x: 0, y: 0 },
       { x: 1, y: 0 },
@@ -1067,7 +1102,11 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 0 }, { x: 0, y: 3 });
+    const path = board.findPath(
+      { x: 0, y: 0 },
+      { x: 0, y: 3 },
+      noCollisionSearchRules(board)
+    );
     expect(path).toEqual([
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -1083,7 +1122,11 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
+    const path = board.findPath(
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      noCollisionSearchRules(board)
+    );
     expect(path).toEqual([
       { x: 0, y: 0 },
       { x: 0, y: 1 },
@@ -1101,13 +1144,17 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 0 }, { x: 2, y: 0 });
-    expect(path).toHaveLength(7);
+    const path = board.findPath(
+      { x: 0, y: 0 },
+      { x: 2, y: 0 },
+      noCollisionSearchRules(board)
+    );
     expect(path.toString(board)).toEqual(dedent`
     @-@
     @-@
     @@@
     `);
+    expect(path).toHaveLength(7);
   });
   it("paths through an open space", () => {
     const board = Board.fromString(
@@ -1120,7 +1167,11 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 0 }, { x: 4, y: 4 });
+    const path = board.findPath(
+      { x: 0, y: 0 },
+      { x: 4, y: 4 },
+      noCollisionSearchRules(board)
+    );
     expect(path).toHaveLength(9);
     console.log(path.toString());
   });
@@ -1135,7 +1186,11 @@ describe("findPath", () => {
       `,
       gridRules
     );
-    const path = board.findPath({ x: 0, y: 2 }, { x: 5, y: 2 });
+    const path = board.findPath(
+      { x: 0, y: 2 },
+      { x: 5, y: 2 },
+      noCollisionSearchRules(board)
+    );
     expect(path).toHaveLength(8);
     expect(path.toString(board)).toEqual(dedent`
     ------
@@ -1153,7 +1208,11 @@ describe("findPath", () => {
         `,
         gridRules
       );
-      const path = board.findPath({ x: 0, y: 0 }, { x: 5, y: 0 });
+      const path = board.findPath(
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+        noCollisionSearchRules(board)
+      );
       expect(path).toEqual(null);
     }
     {
@@ -1165,13 +1224,17 @@ describe("findPath", () => {
         `,
         gridRules
       );
-      const path = board.findPath({ x: 5, y: 0 }, { x: 0, y: 1 });
+      const path = board.findPath(
+        { x: 5, y: 0 },
+        { x: 0, y: 1 },
+        noCollisionSearchRules(board)
+      );
       expect(path).toEqual(null);
     }
   });
 });
 
-fdescribe("pushColor", () => {
+describe("pushColor", () => {
   it("pushes a line further away from below", () => {
     const board = Board.fromString(
       dedent`

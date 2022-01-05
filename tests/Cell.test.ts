@@ -22,13 +22,13 @@ describe("Cell", () => {
       gridRules
     );
     it("returns false for walls, empty spaces, and line segments", () => {
-      expect(board.getCell({ x: 0, y: 0 }).isTail()).toBe(false);
-      expect(board.getCell({ x: 4, y: 0 }).isTail()).toBe(false);
-      expect(board.getCell({ x: 1, y: 1 }).isTail()).toBe(false);
+      expect(board.getCell({ x: 0, y: 0 }).isTail(board)).toBe(false);
+      expect(board.getCell({ x: 4, y: 0 }).isTail(board)).toBe(false);
+      expect(board.getCell({ x: 1, y: 1 }).isTail(board)).toBe(false);
     });
     it("returns true for tails", () => {
-      expect(board.getCell({ x: 3, y: 0 }).isTail()).toBe(true);
-      expect(board.getCell({ x: 3, y: 2 }).isTail()).toBe(true);
+      expect(board.getCell({ x: 3, y: 0 }).isTail(board)).toBe(true);
+      expect(board.getCell({ x: 3, y: 2 }).isTail(board)).toBe(true);
     });
   });
 });

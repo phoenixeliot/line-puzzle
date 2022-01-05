@@ -22,35 +22,24 @@ export class Cell {
   color: string;
   position: Position;
   isEndpoint: boolean;
-  board: Board;
   type: CellType;
 
   constructor({ color, position, isEndpoint, board }) {
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
-
-    // Set Board separately so it doesn't get enumerated by toJSON
-    Object.defineProperty(this, "board", {
-      enumerable: false,
-      writable: true,
-      value: board,
-    });
   }
 
-  isTail() {
+  isTail(board) {
     if (!COLORS.includes(this.color)) {
       return false;
     }
-    const numSameColorNeighbors = this.board.getSameColorNeighborCells(
-      this.position
-    ).length;
+    const numSameColorNeighbors = board.getSameColorNeighborCells(this.position).length;
     return (
       // If it's a lone endpoint with no line segments attached
       numSameColorNeighbors === 0 ||
       // Or it's a line segment with only one connection
-      (this.board.getSameColorNeighborCells(this.position).length === 1 &&
-        !this.isEndpoint)
+      (board.getSameColorNeighborCells(this.position).length === 1 && !this.isEndpoint)
     );
   }
 
@@ -84,15 +73,10 @@ export class Cell {
     return WALL.includes(this.color);
   }
 
-  getNeighbors() {
-    // TODO: Move this completely in here
-    return this.board.getNeighborCells(this.position);
-  }
-
   /**
    * I may need to rename this. "Active" means cell is either a tail or empty; it can still be connected to by neighboring cells.
    */
-  isActive() {
-    return this.isTail() || EMPTY.includes(this.color);
+  isActive(board: Board) {
+    return this.isTail(board) || EMPTY.includes(this.color);
   }
 }

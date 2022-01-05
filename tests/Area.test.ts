@@ -1,6 +1,10 @@
 import hex5x5_1 from "./fixtures/hex5x5_1";
 import { dedent } from "./utils";
-import { Board, getClockwiseDirectionsStartingWith, getNextClockwiseDirection } from "../src/Board";
+import {
+  Board,
+  getClockwiseDirectionsStartingWith,
+  getNextClockwiseDirection,
+} from "../src/Board";
 import { Area } from "../src/Area";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
@@ -28,7 +32,7 @@ describe("toString", () => {
       `,
       gridRules
     );
-    const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+    const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
     expect(area.toString(board)).toEqual(dedent`
     @--
     @--
@@ -46,7 +50,7 @@ describe("toString", () => {
       `,
       gridRules
     );
-    const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+    const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
     expect(area.toString(board)).toEqual(dedent`
     @@@-
     @^@-
@@ -86,7 +90,7 @@ describe("Area", () => {
         gridRules
       );
       expect(() => {
-        const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+        const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       }).toThrowError();
     });
     it("fills a trivial area", () => {
@@ -97,7 +101,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(4);
     });
     it("fills an area with a concave start", () => {
@@ -109,7 +113,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      const area = Area.fromCell(board, board.getCell({ x: 1, y: 1 }));
       expect(area.perimeter.length).toEqual(10);
     });
     it("fills an area with a very concave start", () => {
@@ -122,7 +126,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      const area = Area.fromCell(board, board.getCell({ x: 1, y: 1 }));
       expect(area.perimeter.length).toEqual(12);
     });
     it("fills an area with trick neighbor (up is not the right direction to connect)", () => {
@@ -134,7 +138,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 1, y: 1 }));
+      const area = Area.fromCell(board, board.getCell({ x: 1, y: 1 }));
       expect(area.perimeter.length).toEqual(10);
     });
     it("fills an area with a completed line", () => {
@@ -145,7 +149,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(4);
     });
     it("fills an area with single-wide side channel and double-counts that channel", () => {
@@ -156,7 +160,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(8);
       expect(area.body.size).toEqual(0);
     });
@@ -169,7 +173,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(8);
     });
     it("fills an area with a hole and innards", () => {
@@ -181,7 +185,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.perimeter.length).toEqual(12);
     });
     it("doesn't explore through endpoint barriers", () => {
@@ -192,7 +196,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.positions.size).toBe(3);
     });
     it("doesn't explore through tail barriers", () => {
@@ -204,7 +208,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.positions.size).toBe(3);
     });
     it("includes inner cells in body", () => {
@@ -218,7 +222,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.positions.size).toBe(25);
       expect(area.body.size).toBe(9);
       expect(area.perimeter.length).toBe(16);
@@ -234,7 +238,7 @@ describe("Area", () => {
         `,
         gridRules
       );
-      const area = Area.fromCell(board.getCell({ x: 0, y: 0 }));
+      const area = Area.fromCell(board, board.getCell({ x: 0, y: 0 }));
       expect(area.toString(board)).toEqual(dedent`
       @@@----
       @^@@---

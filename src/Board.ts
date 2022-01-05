@@ -238,7 +238,7 @@ export class Board {
             // !isEqual(pos, path.at(-2)) &&
             !path.some((prevPos) => isEqual(newPos, prevPos)) &&
             // Don't path through the currently pushing path, except to finish connecting
-            (cell.color !== color || cell.isTail()) &&
+            (cell.color !== color || cell.isTail(this)) &&
             // Don't push through immovable cells
             !(cell.color !== color && cell.isEndpoint) &&
             !avoidColors.includes(cell.color)
@@ -250,10 +250,10 @@ export class Board {
       },
       // fn: partial solution quality heuristic (what properties must it have to guarantee optimality, again?)
       // Smaller is better
-      partialQualityHeuristic: (path) => {
+      partialQualityHeuristic: (path, target) => {
         const pos = path.at(-1);
         const euclideanDistanceRemaining =
-          Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
+          Math.abs(pos.x - target.x) + Math.abs(pos.y - target.y);
         return path.length + euclideanDistanceRemaining;
       },
     };
@@ -283,7 +283,8 @@ export class Board {
             this.isValidPosition(pos) &&
             // !isEqual(pos, path.at(-2)) &&
             !path.some((prevPos) => isEqual(pos, prevPos)) &&
-            (cell.isEmpty() || (cell.isTail() && cell.color === this.getCell(pos1).color))
+            (cell.isEmpty() ||
+              (cell.isTail(this) && cell.color === this.getCell(pos1).color))
           );
         });
         return newPositions.map((newPos) => {
@@ -292,10 +293,10 @@ export class Board {
       },
       // fn: partial solution quality heuristic (what properties must it have to guarantee optimality, again?)
       // Smaller is better
-      partialQualityHeuristic: (path) => {
+      partialQualityHeuristic: (path, target) => {
         const pos = path.at(-1);
         const euclideanDistanceRemaining =
-          Math.abs(pos.x - pos2.x) + Math.abs(pos.y - pos2.y);
+          Math.abs(pos.x - target.x) + Math.abs(pos.y - target.y);
         return path.length + euclideanDistanceRemaining;
       },
       allowBacktracking: true,
@@ -320,12 +321,16 @@ export class Board {
     while (true) {
       // Sort backwards so we can pop cheaply. Best paths are at the end.
       paths.sort(
-        (a, b) => -(rules.partialQualityHeuristic(a) - rules.partialQualityHeuristic(b))
+        (a, b) =>
+          -(
+            rules.partialQualityHeuristic(a, pos2) -
+            rules.partialQualityHeuristic(b, pos2)
+          )
       );
       console.log("===============");
       for (const path of paths) {
         console.log(
-          rules.partialQualityHeuristic(path),
+          rules.partialQualityHeuristic(path, pos2),
           path.map((p) => JSON.stringify(p)).join("\n")
         );
       }
@@ -426,7 +431,7 @@ export class Board {
    */
   *iterateTails() {
     for (const cell of this.iterateFilledCells()) {
-      if (cell.isTail()) {
+      if (cell.isTail(this)) {
         yield cell;
       }
     }
@@ -511,8 +516,8 @@ export class Board {
         // either:
         // cell is empty or a tail
         //   -> start an area there, explore it to completion
-        if (cell.isActive()) {
-          const area = Area.fromCell(cell);
+        if (cell.isActive(this)) {
+          const area = Area.fromCell(this, cell);
           areas.push(area);
           for (const position of area.positions) {
             remainingPositions.delete(position);
@@ -652,7 +657,9 @@ export class Board {
     // }
 
     // Check for inaccessible areas (no tails reachable to fill the space)
-    if (areas.some((area) => !area.positions.some((pos) => this.getCell(pos).isTail()))) {
+    if (
+      areas.some((area) => !area.positions.some((pos) => this.getCell(pos).isTail(this)))
+    ) {
       return false;
     }
 
@@ -723,7 +730,7 @@ export class Board {
     // - TODO Move along the perimeter if touching the inactive edge
     // - TODO Move toward the same color tail
     for (const tail of this.iterateTails()) {
-      for (const emptyCell of tail.getNeighbors().filter((n) => n.isEmpty())) {
+      for (const emptyCell of this.getNeighborCells(tail).filter((n) => n.isEmpty())) {
         const hypothesisBoard = new Board(this.data, this.rules);
         hypothesisBoard.setColor(emptyCell.position, tail.color);
         // console.log(`at depth ${level}:\n${hypothesisBoard.toString()}`);
@@ -763,7 +770,7 @@ export class Board {
       console.log(this.toString());
       madeChanges = false;
       for (const tail of this.iterateTails()) {
-        const neighbors = tail.getNeighbors();
+        const neighbors = this.getNeighborCells(tail);
         const emptyNeighbors = neighbors.filter((neighbor) => neighbor.isEmpty());
         if (emptyNeighbors.length === 1) {
           const emptyNeighbor = emptyNeighbors[0];

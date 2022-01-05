@@ -5,11 +5,13 @@
 - [x] Implement basic push algorithm
   - [x] Implement double layer pushing
   - [ ] Implement backtracking to reconnect in pushed layers
+- [ ] Implement undo/redo stack with grouping
+- [ ] Implement animation state changes for eg filling in implied connection
 
 # Board class
 
 - [ ] Embed connections in the data (not just cell colors with inferred connections)
-- [ ] Implement path simplification (eg round off 4-square loops, 3-hex triangles)
+- [ ] Implement path simplification (eg round off 4-square comloops, 3-hex triangles)
 
 # Algorithm notes
 
