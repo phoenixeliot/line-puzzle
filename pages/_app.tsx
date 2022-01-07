@@ -1,5 +1,9 @@
+import React from "react";
+import { Provider } from "react-redux";
+import { store } from "../src/app/store";
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
+import App from "../src/App";
 
 // Disable server side rendering for debugging
 function SafeHydrate({ children }) {
@@ -11,7 +15,11 @@ function SafeHydrate({ children }) {
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <SafeHydrate>
-      <Component {...pageProps} />
+      <React.StrictMode>
+        <Provider store={store}>
+          <Component {...pageProps} />
+        </Provider>
+      </React.StrictMode>
     </SafeHydrate>
   );
 }

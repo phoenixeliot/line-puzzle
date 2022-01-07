@@ -208,7 +208,6 @@ export class Board {
     this.setColor(position, color);
     console.log("===============");
     console.log(this.toString());
-    debugger;
     // console.log(connections);
     if (connections.length == 2) {
       this.connectPathWithPushing(
