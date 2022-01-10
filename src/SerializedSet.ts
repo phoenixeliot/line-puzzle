@@ -1,6 +1,11 @@
+import { makeObservable, observable, action } from "mobx";
 export class SerializedSet<T> extends Set {
   constructor(items: Array<T> = []) {
     super(items);
+    makeObservable(this, {
+      add: action,
+      delete: action,
+    });
   }
   has(item: T) {
     return super.has(JSON.stringify(item));

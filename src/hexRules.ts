@@ -23,3 +23,9 @@ export function getNeighborDirections(position) {
     ];
   }
 }
+
+const hexRules = {
+  getNeighborDirections,
+};
+
+export default hexRules;

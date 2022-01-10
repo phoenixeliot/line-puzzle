@@ -1,3 +1,12 @@
+import {
+  makeAutoObservable,
+  makeObservable,
+  observable,
+  computed,
+  flow,
+  action,
+  autorun,
+} from "mobx";
 import isEqual from "lodash/isEqual";
 import cloneDeep from "lodash/cloneDeep";
 import cloneDeepWith from "lodash/cloneDeepWith";
@@ -6,6 +15,7 @@ import { Cell } from "./Cell";
 import { SerializedSet } from "./SerializedSet";
 import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./constants";
 import { colorize } from "./terminalColors";
+import gridRules from "./gridRules";
 
 export function getNextClockwiseDirection(direction, directions) {
   const index = directions.findIndex(isEqual.bind(null, direction));
@@ -37,6 +47,7 @@ export interface Rules {
 }
 
 export class Path extends Array<Position> {
+  // TODO: makeAutoObservable(this)?
   toString(board?: Board): string {
     const grid = [];
     // Fill in the background area
@@ -72,6 +83,7 @@ export class AreaColors {
     innerColors = new Set<string>(),
     lineColors = new Set<string>(),
   }) {
+    makeAutoObservable(this);
     this.originalPerimeterColors = Array.from(perimeterColors);
     this.perimeterColors = perimeterColors;
     this.innerColors = innerColors;
@@ -80,12 +92,18 @@ export class AreaColors {
 }
 
 export class Board {
-  data: Array<Array<Cell>>;
-  rules: Rules;
+  // DEBUG: Testing why some class fields weren't being tracked TODO Remove
+  count: number = 0;
+  increment() {
+    this.count += 1;
+  }
+
+  data: Array<Array<Cell>> = [];
+  rules: Rules = gridRules;
   dimensions: {
     width: number;
     height: number;
-  };
+  } = { width: 0, height: 0 };
   colors: Set<string>;
   consoleColorMap = {
     "-": ["dim"],
@@ -101,41 +119,41 @@ export class Board {
     P: "magentaBg", // purple, no console color
   };
 
-  // Just create the object, we initialize it later so Cells can have a reference to the Board
-  constructor(data?: Array<Array<Cell>>, rules?: Rules) {
-    if (data && rules) {
-      const newData = cloneDeepWith(data, (value) => {
-        if (value.constructor == Board) {
-          return null;
-        }
-      });
-      this.init(newData, rules);
-      for (const cell of this.iterateCells()) {
-        cell.board = this;
-      }
-    }
-  }
-
   /**
-   * Populate the board values after the board exists, so Cells can have a reference to the Board
    * @param {*} data - Grid cell data
    * @param {Rules} rules - Board rules (eg which cells are connected to others, eg grid vs hex)
-   * @param {Object} options
-   * @param {boolean} options.isInitial - True if the board is completely unsolved (only endpoints on lines)
    */
-  init(data, rules: Rules) {
+  constructor(data?: Array<Array<Cell>>, rules: Rules = gridRules) {
+    // makeAutoObservable(this);
+    makeObservable(this, {
+      count: observable,
+      increment: action,
+
+      data: observable,
+      rules: observable,
+      dimensions: observable,
+      connectPathToPosition: action,
+      connectPathWithPushing: action,
+      setColor: action,
+      pushColor: action,
+      simplifyEdgeColorOrderings: action,
+      solve: action,
+      _solve: action,
+      solveChoicelessMoves: action,
+    });
     this.data = data;
     this.rules = rules;
     this.dimensions = this._getDimensions();
     this.colors = this._getColors();
+    autorun(() => console.log(this.toString()));
   }
 
   clone() {
     return new Board(this.data, this.rules);
   }
 
-  static fromString(boardString, rules: Rules) {
-    const board = new Board();
+  static fromString(boardString, rules: Rules = gridRules) {
+    // const board = new Board();
     const boardData = boardString
       .trim()
       .split("\n")
@@ -145,11 +163,11 @@ export class Board {
             color: color.toUpperCase(),
             isEndpoint: ENDPOINT_COLORS.includes(color),
             position: { x, y },
-            board,
           });
         })
       );
-    board.init(boardData, rules);
+    const board = new Board(boardData, rules);
+    // board.init(boardData, rules);
     return board;
   }
 
@@ -204,12 +222,8 @@ export class Board {
   pushColor(position: Position, color: string, avoidColors: Array<string> = []): boolean {
     const cell = this.getCell(position);
     if (cell.isEndpoint) return cell.color === color;
-    const connections = this.getConnections(position);
     this.setColor(position, color);
-    console.log("===============");
-    console.log(this.toString());
-    debugger;
-    // console.log(connections);
+    const connections = this.getConnections(position);
     if (connections.length == 2) {
       this.connectPathWithPushing(
         connections[0],
@@ -257,7 +271,6 @@ export class Board {
         return path.length + euclideanDistanceRemaining;
       },
     };
-    // debugger;
     const path = this.findPath(pos1, pos2, allowOtherColorCollisionRules);
     if (!path) return false; // No path was found
     for (const pos of path) {
@@ -311,7 +324,6 @@ export class Board {
 
   // TODO: Implement highly generic/configurable A*
   findPath(pos1, pos2, rules): Path {
-    // debugger;
     const paths: Array<Path> = [[pos1]];
     if (rules.allowBacktracking) {
       // TODO: Get the current already-existing path on each end
@@ -334,7 +346,6 @@ export class Board {
           path.map((p) => JSON.stringify(p)).join("\n")
         );
       }
-      // debugger;
       const path = paths.pop();
 
       // Check finish conditions
@@ -704,7 +715,7 @@ export class Board {
     // if (level > 3) {
     //   return this;
     // }
-    console.log(this.toString());
+    // console.log(this.toString());
     // if (recursionAttempts >= 1) {
     //   return { board: this, isComplete: this.isComplete(), recursionAttempts };
     // }
@@ -722,7 +733,7 @@ export class Board {
       };
     }
 
-    console.log(this.toString());
+    // console.log(this.toString());
     // return [this, recursionAttempts];
 
     // When ambiguous, use A*
@@ -767,7 +778,7 @@ export class Board {
     // - TODO Move along the perimeter if two of same color tail are adjacent
     let madeChanges = true;
     while (madeChanges) {
-      console.log(this.toString());
+      // console.log(this.toString());
       madeChanges = false;
       for (const tail of this.iterateTails()) {
         const neighbors = this.getNeighborCells(tail);

@@ -1,3 +1,4 @@
+import { makeAutoObservable, makeObservable, observable, action } from "mobx";
 import { Position, Board } from "./Board";
 import { COLORS, EMPTY, WALL } from "./constants";
 
@@ -19,12 +20,26 @@ export enum CellType {
 }
 
 export class Cell {
-  color: string;
-  position: Position;
-  isEndpoint: boolean;
-  type: CellType;
+  color: string = null;
+  position: Position = null;
+  isEndpoint: boolean = null;
+  type: CellType = null;
 
-  constructor({ color, position, isEndpoint, board }) {
+  constructor({
+    color,
+    position,
+    isEndpoint,
+  }: {
+    color: string;
+    position: Position;
+    isEndpoint: boolean;
+  }) {
+    makeAutoObservable(this);
+    // makeObservable(this, {
+    //   color: observable,
+    //   position: observable,
+    //   isEndpoint: observable,
+    // });
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;

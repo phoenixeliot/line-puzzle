@@ -14,3 +14,9 @@ export function getNeighborDirections(position) {
     { dx: -1, dy: 0 }, // left
   ];
 }
+
+const gridRules = {
+  getNeighborDirections,
+};
+
+export default gridRules;
