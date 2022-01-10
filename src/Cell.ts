@@ -20,10 +20,10 @@ export enum CellType {
 }
 
 export class Cell {
-  color: string = null;
-  position: Position = null;
-  isEndpoint: boolean = null;
-  type: CellType = null;
+  color: string;
+  position: Position;
+  isEndpoint: boolean;
+  type: CellType;
 
   constructor({
     color,

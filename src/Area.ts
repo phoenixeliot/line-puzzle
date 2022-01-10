@@ -14,9 +14,9 @@ import { getNeighborDirections } from "./gridRules";
  * Represents an open area of a board, including empty spaces and tails, but not including walls or line segments
  */
 export class Area {
-  positions: SerializedSet<Position> = null;
-  perimeter: Array<Position> = null; // Clockwise ordered cells marking the outer edge of the area
-  body: SerializedSet<Position> = null;
+  positions: SerializedSet<Position>;
+  perimeter: Array<Position>; // Clockwise ordered cells marking the outer edge of the area
+  body: SerializedSet<Position>;
 
   constructor({
     positions,

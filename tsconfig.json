@@ -15,8 +15,7 @@
     "jsx": "preserve",
     "incremental": true,
     "downlevelIteration": true,
-    "strict": false,
-    "useDefineForClassFields": true // required for MobX
+    "strict": false
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
