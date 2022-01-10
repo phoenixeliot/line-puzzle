@@ -2,7 +2,7 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { Board, Position } from "../src/Board";
-import InteractiveBoard from "../src/components/InteractiveBoard";
+import InteractiveBoard from "../src/features/board/InteractiveBoard";
 import styles from "../styles/Home.module.css";
 import { dedent } from "../tests/utils";
 import * as gridRules from "../src/gridRules";

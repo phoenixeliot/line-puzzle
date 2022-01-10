@@ -1,9 +1,11 @@
 import clsx from "clsx";
 import React, { CSSProperties, useEffect } from "react";
 import styles from "../../styles/InteractiveBoard.module.css";
-import { Board, Position } from "../Board";
-import { Cell } from "../Cell";
-import GridCell from "./GridCell";
+import { Board, Position } from "../../Board";
+import { Cell } from "../../Cell";
+import GridCell from "../../components/GridCell";
+
+// TODO in progress: Convert this to use boardReducer for UI state
 
 type BoardData = Array<Array<Cell>>;
 
