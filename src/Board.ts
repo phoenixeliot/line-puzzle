@@ -8,6 +8,7 @@ import {
   autorun,
 } from "mobx";
 import isEqual from "lodash/isEqual";
+import isEqualWith from "lodash/isEqualWith";
 import cloneDeep from "lodash/cloneDeep";
 import cloneDeepWith from "lodash/cloneDeepWith";
 import { Area } from "./Area";
@@ -16,6 +17,13 @@ import { SerializedSet } from "./SerializedSet";
 import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./constants";
 import { colorize } from "./terminalColors";
 import gridRules from "./gridRules";
+
+const isEqualObj = (value, other) => {
+  return isEqualWith(value, other, (v, o) => {
+    if (v.isEqual && v.isEqual(o)) return true;
+    if (o.isEqual && o.isEqual(v)) return true;
+  });
+};
 
 export function getNextClockwiseDirection(direction, directions) {
   const index = directions.findIndex(isEqual.bind(null, direction));
@@ -33,10 +41,36 @@ export function getClockwiseDirectionsStartingWith(direction, directions) {
   return directions.slice(startIndex).concat(directions.slice(0, startIndex));
 }
 
-export interface Position {
+export class Position extends Object {
   x: number;
   y: number;
+  constructor(obj: { x: number; y: number }) {
+    super();
+    const { x, y } = obj;
+    Object.assign(this, { x, y });
+  }
+  toString() {
+    return `${this.x},${this.y}`;
+  }
+  static fromString(cellId): Position {
+    const [x, y] = cellId.split(",").map(Number);
+    if (x == null || y == null) {
+      throw new Error(`Position was created with invalid coordinates: "${cellId}"`);
+    }
+    return new Position({ x, y });
+  }
+  static min(a, b) {
+    if (a.x < b.x) return a;
+    if (a.x > b.x) return b;
+    if (a.y < b.y) return a;
+    if (a.y > b.y) return b;
+    return a;
+  }
+  isEqual(other) {
+    return isEqual(Object.assign({}, this), Object.assign({}, other));
+  }
 }
+
 export interface PositionDelta {
   dx: number;
   dy: number;
@@ -91,14 +125,21 @@ export class AreaColors {
   }
 }
 
-export class Board {
-  // DEBUG: Testing why some class fields weren't being tracked TODO Remove
-  count: number = 0;
-  increment() {
-    this.count += 1;
-  }
+type CellIdentifier = string; // point coordinates, eg "1,1"
 
-  data: Array<Array<Cell>> = [];
+type EdgeIdentifier = string; // pointA-pointB; eg "1,1-1,2"
+class Edge {
+  possible: boolean;
+  connected: boolean;
+}
+
+type CellsCollection = Record<CellIdentifier, Cell>;
+
+type EdgesCollection = Record<EdgeIdentifier, Edge>;
+
+export class Board {
+  cells: CellsCollection;
+  edges: EdgesCollection; // Connections between adjacent cells
   rules: Rules = gridRules;
   dimensions: {
     width: number;
@@ -123,52 +164,68 @@ export class Board {
    * @param {*} data - Grid cell data
    * @param {Rules} rules - Board rules (eg which cells are connected to others, eg grid vs hex)
    */
-  constructor(data?: Array<Array<Cell>>, rules: Rules = gridRules) {
-    // makeAutoObservable(this);
+  constructor(
+    cells?: CellsCollection,
+    edges?: EdgesCollection,
+    rules: Rules = gridRules
+  ) {
+    this.cells = cells || {};
+    this.edges = edges || {};
+    this.rules = rules;
+    this.dimensions = this._getDimensions();
+    this.colors = this._getColors();
     makeObservable(this, {
-      count: observable,
-      increment: action,
-
-      data: observable,
+      cells: observable,
+      edges: observable,
       rules: observable,
       dimensions: observable,
       connectPathToPosition: action,
       connectPathWithPushing: action,
       setColor: action,
       pushColor: action,
-      simplifyEdgeColorOrderings: action,
       solve: action,
       _solve: action,
       solveChoicelessMoves: action,
     });
-    this.data = data;
-    this.rules = rules;
-    this.dimensions = this._getDimensions();
-    this.colors = this._getColors();
-    autorun(() => console.log(this.toString()));
+    // autorun(() => console.log(this.toString()));
   }
 
   clone() {
-    return new Board(this.data, this.rules);
+    return new Board(this.cells, this.edges, this.rules);
   }
 
   static fromString(boardString, rules: Rules = gridRules) {
-    // const board = new Board();
-    const boardData = boardString
+    const cells: CellsCollection = {};
+    boardString
       .trim()
       .split("\n")
-      .map((row, y) =>
-        row.split("").map((color, x) => {
-          return new Cell({
+      .forEach((row, y) =>
+        row.split("").forEach((color, x) => {
+          const cell = new Cell({
             color: color.toUpperCase(),
             isEndpoint: ENDPOINT_COLORS.includes(color),
-            position: { x, y },
+            position: new Position({ x, y }),
           });
+          cells[cell.position.toString()] = cell;
         })
       );
-    const board = new Board(boardData, rules);
-    // board.init(boardData, rules);
-    return board;
+    const edges = {};
+    return new Board(cells, edges, rules);
+  }
+
+  // Stub for the old data format. TODO Replace usage of this with new format when it makes more sense
+  get data(): Array<Array<Cell>> {
+    const grid = [];
+    Object.keys(this.cells).forEach((cellId) => {
+      // TODO: Extract this to a utility function
+      const position = Position.fromString(cellId);
+      const { x, y } = position;
+      if (!grid[y]) {
+        grid[y] = [];
+      }
+      grid[y][x] = this.cells[cellId];
+    });
+    return grid;
   }
 
   toString(useColors = false) {
@@ -222,8 +279,8 @@ export class Board {
   pushColor(position: Position, color: string, avoidColors: Array<string> = []): boolean {
     const cell = this.getCell(position);
     if (cell.isEndpoint) return cell.color === color;
-    this.setColor(position, color);
     const connections = this.getConnections(position);
+    this.setColor(position, color);
     if (connections.length == 2) {
       this.connectPathWithPushing(
         connections[0],
@@ -246,11 +303,12 @@ export class Board {
         const candidatePositions = this.getNeighborPositions(pos);
         const newPositions = candidatePositions.filter((newPos) => {
           const cell = this.getCell(newPos);
-          // if (isEqual(pos, { x: 4, y: 3 })) debugger;
           return (
             this.isValidPosition(newPos) &&
             // !isEqual(pos, path.at(-2)) &&
-            !path.some((prevPos) => isEqual(newPos, prevPos)) &&
+            !path.some((prevPos) => {
+              return isEqual(new Position(newPos), new Position(prevPos));
+            }) &&
             // Don't path through the currently pushing path, except to finish connecting
             (cell.color !== color || cell.isTail(this)) &&
             // Don't push through immovable cells
@@ -290,12 +348,12 @@ export class Board {
       getNextMoves: (path) => {
         const pos = path.at(-1);
         const candidatePositions = this.getNeighborPositions(pos);
-        const newPositions = candidatePositions.filter((pos) => {
-          const cell = this.getCell(pos);
+        const newPositions = candidatePositions.filter((newPos) => {
+          const cell = this.getCell(newPos);
           return (
-            this.isValidPosition(pos) &&
+            this.isValidPosition(newPos) &&
             // !isEqual(pos, path.at(-2)) &&
-            !path.some((prevPos) => isEqual(pos, prevPos)) &&
+            !path.some((prevPos) => isEqualObj(newPos, prevPos)) &&
             (cell.isEmpty() ||
               (cell.isTail(this) && cell.color === this.getCell(pos1).color))
           );
@@ -339,18 +397,18 @@ export class Board {
             rules.partialQualityHeuristic(b, pos2)
           )
       );
-      console.log("===============");
-      for (const path of paths) {
-        console.log(
-          rules.partialQualityHeuristic(path, pos2),
-          path.map((p) => JSON.stringify(p)).join("\n")
-        );
-      }
+      // console.log("===============");
+      // for (const path of paths) {
+      //   console.log(
+      //     rules.partialQualityHeuristic(path, pos2),
+      //     path.map((p) => JSON.stringify(p)).join("\n")
+      //   );
+      // }
       const path = paths.pop();
 
       // Check finish conditions
       if (!path) return null; // We've run out of paths to try
-      if (isEqual(path.at(-1), pos2)) return Path.from(path); // We've found the exit
+      if (isEqualObj(path.at(-1), pos2)) return Path.from(path); // We've found the exit
 
       // Add the new frontier of paths
       // TODO: Consider using a Map to make each cell have only one best path, no multiple paths going through the same cell
@@ -397,10 +455,9 @@ export class Board {
     );
   }
 
-  _getColors() {
+  _getColors(): Set<string> {
     return new Set(
-      this.data
-        .flat()
+      Array.from(this.iterateCells())
         .map((cell) => cell.color)
         .filter((color) => COLORS.includes(color))
     );
@@ -410,6 +467,10 @@ export class Board {
     let width = 0;
     let height = 0;
     for (const cell of this.iterateCells()) {
+      if (!cell.position) {
+        console.log({ cell });
+        throw new Error(`No position on cell! ${JSON.stringify(cell)}`);
+      }
       if (cell.position.x + 1 > width) {
         width = cell.position.x + 1;
       }
@@ -429,10 +490,8 @@ export class Board {
   }
 
   *iterateCells() {
-    for (const row of this.data) {
-      for (const cell of row) {
-        yield cell;
-      }
+    for (const cell of Object.values(this.cells)) {
+      yield cell;
     }
   }
 
@@ -492,7 +551,7 @@ export class Board {
     const growingEdge = new SerializedSet<Position>([pos1]);
     while (growingEdge.size > 0) {
       for (const newPos of growingEdge) {
-        if (isEqual(newPos, pos2)) {
+        if (isEqualObj(newPos, pos2)) {
           return true;
         }
         const unexploredNeighbors = this.getNeighborCells(newPos).filter(
@@ -558,7 +617,9 @@ export class Board {
   }
 
   // TODO: Move with getAreaColors into Area class or so
-  simplifyEdgeColorOrderings(colorOrderings: Array<AreaColors>): Array<AreaColors> {
+  static simplifyEdgeColorOrderings(
+    colorOrderings: Array<AreaColors>
+  ): Array<AreaColors> {
     const simplifiedOrderings: Array<AreaColors> = cloneDeep(colorOrderings);
     const resolvedColors = new Set();
     // First, simplify each ordering independently
@@ -642,7 +703,7 @@ export class Board {
     const areaColorSets = areas.map((area) => {
       return this.getAreaColors(area);
     });
-    const simplifiedColorOrderings = this.simplifyEdgeColorOrderings(areaColorSets);
+    const simplifiedColorOrderings = Board.simplifyEdgeColorOrderings(areaColorSets);
     if (
       simplifiedColorOrderings.some(
         (ordering) =>
@@ -653,7 +714,7 @@ export class Board {
     }
 
     // const simplifiedColorOrderings = colorOrderings.map((ordering) => {
-    //   const simplifiedOrdering = this.simplifyEdgeColorOrdering(ordering, colorOrderings);
+    //   const simplifiedOrdering = Board.simplifyEdgeColorOrdering(ordering, colorOrderings);
     //   return { ordering, simplifiedOrdering };
     // });
     // If a color is involved in a knot in one area, but knotless in another area, remove it from knotted areas
@@ -689,7 +750,7 @@ export class Board {
         };
         if (!this.isValidPosition(newPosition)) return false;
         if (!this.getCell(newPosition).isEmpty()) return false;
-        const hypotheticalBoard = new Board(this.data, this.rules);
+        const hypotheticalBoard = new Board(this.cells, this.edges, this.rules);
         hypotheticalBoard.setColor(newPosition, cell.color);
         if (!hypotheticalBoard.isValidPartial()) return false;
         return true;
@@ -703,8 +764,12 @@ export class Board {
   }
 
   async solve() {
-    const { board } = await this._solve();
-    return board;
+    try {
+      const { board } = await this._solve();
+      return board;
+    } catch (e) {
+      console.trace(e);
+    }
   }
 
   // TODO fix this any type
@@ -742,7 +807,7 @@ export class Board {
     // - TODO Move toward the same color tail
     for (const tail of this.iterateTails()) {
       for (const emptyCell of this.getNeighborCells(tail).filter((n) => n.isEmpty())) {
-        const hypothesisBoard = new Board(this.data, this.rules);
+        const hypothesisBoard = new Board(this.cells, this.edges, this.rules);
         hypothesisBoard.setColor(emptyCell.position, tail.color);
         // console.log(`at depth ${level}:\n${hypothesisBoard.toString()}`);
 

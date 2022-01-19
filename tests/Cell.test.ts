@@ -1,4 +1,4 @@
-import { Board } from "../src/board";
+import { Board } from "../src/Board";
 import * as gridRules from "../src/gridRules";
 import { dedent } from "./utils";
 

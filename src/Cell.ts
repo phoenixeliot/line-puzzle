@@ -34,15 +34,10 @@ export class Cell {
     position: Position;
     isEndpoint: boolean;
   }) {
-    makeAutoObservable(this);
-    // makeObservable(this, {
-    //   color: observable,
-    //   position: observable,
-    //   isEndpoint: observable,
-    // });
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
+    makeAutoObservable(this);
   }
 
   isTail(board) {

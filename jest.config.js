@@ -3,6 +3,7 @@ module.exports = {
   preset: "ts-jest",
   transform: {
     "^.+\\.(t|j)sx?$": ["@swc/jest", { sourceMaps: "inline" }],
+    // "^.+\\.(t|j)sx?$": ["ts-jest", { sourceMaps: "inline" }],
     // "^.+\\.jsx?$": "babel-jest",
     // "^.+\\.tsx?$": "ts-jest",
   },
