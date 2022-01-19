@@ -18,7 +18,7 @@ import { ENDPOINT_COLORS, WALL, COLORS, EMPTY } from "./constants";
 import { colorize } from "./terminalColors";
 import gridRules from "./gridRules";
 
-const isEqualObj = (value, other) => {
+export const isEqualObj = (value, other) => {
   return isEqualWith(value, other, (v, o) => {
     if (v.isEqual && v.isEqual(o)) return true;
     if (o.isEqual && o.isEqual(v)) return true;
@@ -87,6 +87,12 @@ export function createEdgeIdFromPositions(
   return `${new Position(pos1).toString()};${new Position(pos2).toString()}`;
 }
 
+export function getPositionsFromEdgeId(edgeId: EdgeIdentifier): [Position, Position] {
+  const cellIds = edgeId.split(";");
+  if (cellIds.length !== 2) throw new Error(`Invalid edgeID: ${edgeId}`);
+  return cellIds.map((cellId) => Position.fromString(cellId)) as [Position, Position];
+}
+
 export interface Rules {
   getNeighborDirections: (pos: Position) => Array<PositionDelta>;
 }
@@ -146,7 +152,7 @@ class Edge {
 
 type CellsCollection = Record<CellIdentifier, Cell>;
 
-type EdgesCollection = Record<EdgeIdentifier, Edge>;
+export type EdgesCollection = Record<EdgeIdentifier, Edge>;
 
 export class Board {
   cells: CellsCollection;
@@ -195,7 +201,6 @@ export class Board {
       setColor: action,
       pushColor: action,
       solve: action,
-      _solve: action,
       solveChoicelessMoves: action,
       propagateEdgeConstraints: action,
     });
@@ -488,6 +493,14 @@ export class Board {
     return this.getNeighborPositions(position).map((pos2) => {
       return createEdgeIdFromPositions(position, pos2);
     });
+  }
+
+  getNeighborEdges(position): EdgesCollection {
+    const edges: EdgesCollection = {};
+    this.getNeighborEdgeIds(position).forEach((edgeId) => {
+      edges[edgeId] = this.edges[edgeId];
+    });
+    return edges;
   }
 
   getNeighborCells(position) {

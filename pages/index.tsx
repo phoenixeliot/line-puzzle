@@ -13,7 +13,8 @@ import { makeAutoObservable, makeObservable, observable, action } from "mobx";
 
 const board = Board.fromString(
   dedent`
-  O---O
+  #---#
+  O-#-O
   `,
   gridRules
 );
