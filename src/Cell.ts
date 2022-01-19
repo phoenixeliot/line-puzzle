@@ -1,4 +1,4 @@
-import { makeAutoObservable, makeObservable, observable, action } from "mobx";
+import { makeAutoObservable, makeObservable, observable, action, computed } from "mobx";
 import { Position, Board } from "./Board";
 import { COLORS, EMPTY, WALL } from "./constants";
 
@@ -39,7 +39,20 @@ export class Cell {
     this.color = color;
     this.position = position;
     this.isEndpoint = isEndpoint;
-    makeAutoObservable(this);
+    // TODO: Replace with makeAutoObservable if it works once I implement edge dragging
+    makeObservable(this, {
+      color: observable,
+      position: observable,
+      isEndpoint: observable,
+      type: observable,
+      error: observable,
+      errorMessage: observable,
+      requiredConnections: computed,
+      hasLine: computed,
+      isKnownType: computed,
+      isEmpty: computed,
+      isWall: computed,
+    });
   }
 
   isTail(board) {
@@ -75,6 +88,7 @@ export class Cell {
     return 2;
   }
 
+  // TODO: Update. Not quire true anymore; we can have colorless lines.
   get hasLine() {
     return COLORS.includes(this.color);
   }

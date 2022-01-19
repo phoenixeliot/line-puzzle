@@ -27,7 +27,7 @@ describe("Board", () => {
         oo#B
         YO--
       `;
-      expect(Board.fromString(boardString, gridRules).toString()).toEqual(boardString);
+      expect(Board.fromString(boardString).toString()).toEqual(boardString);
     });
   });
   describe("fromString", () => {
@@ -66,8 +66,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
         O-O
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails.length).toBe(2);
@@ -77,8 +76,7 @@ describe("Board", () => {
         OBY
         ---
         OBY
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails2.length).toBe(6);
@@ -88,8 +86,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
         O-oO
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails.length).toBe(2);
@@ -100,8 +97,7 @@ describe("Board", () => {
         -b-
         o-y
         OBY
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails2.length).toBe(6);
@@ -111,8 +107,7 @@ describe("Board", () => {
         Board.fromString(
           dedent`
         Oo-oO
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails.length).toBe(2);
@@ -124,8 +119,7 @@ describe("Board", () => {
         ---
         oby
         OBY
-      `,
-          gridRules
+      `
         ).iterateTails()
       );
       expect(tails2.length).toBe(6);
@@ -139,8 +133,7 @@ describe("Board", () => {
             B#-
             #Yy
             O--
-          `,
-          gridRules
+          `
         )._getColors()
       ).toEqual(new Set(["B", "Y", "O"]));
     });
@@ -148,12 +141,18 @@ describe("Board", () => {
   describe("canConnect", () => {
     it("detects unconnectable paths", () => {
       expect(
-        Board.fromString("O-#-O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+        Board.fromString("O-#-O").canConnect(
+          new Position({ x: 0, y: 0 }),
+          new Position({ x: 4, y: 0 })
+        )
       ).toBe(false);
     });
     it("detects connectable paths", () => {
       expect(
-        Board.fromString("O---O", gridRules).canConnect({ x: 0, y: 0 }, { x: 4, y: 0 })
+        Board.fromString("O---O").canConnect(
+          new Position({ x: 0, y: 0 }),
+          new Position({ x: 4, y: 0 })
+        )
       ).toBe(true);
     });
   });
@@ -163,8 +162,7 @@ describe("Board", () => {
         dedent`
           --
           --
-        `,
-        gridRules
+        `
       ).getOpenAreas();
       expect(openAreas.length).toBe(1);
       expect(openAreas[0].perimeter.length).toBe(4);
@@ -175,8 +173,7 @@ describe("Board", () => {
           ###
           #-#
           ###
-        `,
-        gridRules
+        `
       ).getOpenAreas();
       expect(openAreas.length).toBe(1);
       expect(openAreas[0].perimeter.length).toBe(1);
@@ -187,8 +184,7 @@ describe("Board", () => {
           ##-#
           ----
           ##-#
-        `,
-        gridRules
+        `
       ).getOpenAreas();
       expect(openAreas.length).toBe(1);
       expect(openAreas[0].perimeter.length).toBe(10);
@@ -201,8 +197,7 @@ describe("Board", () => {
         --y
         ---
         ---
-      `,
-        gridRules
+      `
       ).getOpenAreas();
       expect(openAreas.length).toBe(1);
       expect(openAreas[0].perimeter.length).toBe(10);
@@ -213,8 +208,7 @@ describe("Board", () => {
         #Yy-
         BB--
         #Oo-
-      `,
-        gridRules
+      `
       );
       const openAreas = board.getOpenAreas();
       expect(openAreas.length).toBe(1);
@@ -226,8 +220,7 @@ describe("Board", () => {
         #Yy-
         BB--
         #Oo-
-      `,
-        gridRules
+      `
       );
       const openAreas = board.getOpenAreas();
       expect(openAreas.length).toBe(1);
@@ -302,8 +295,7 @@ describe("Board", () => {
         -B-G--
         ---R-R
         Y--G--
-        `,
-        gridRules
+        `
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
@@ -323,8 +315,7 @@ describe("Board", () => {
         -B-G--
         ---G--
         ---R-R
-        `,
-        gridRules
+        `
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
@@ -344,8 +335,7 @@ describe("Board", () => {
         ---G-B
         ---R-R
         Y--G--
-        `,
-        gridRules
+        `
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
@@ -371,8 +361,7 @@ describe("Board", () => {
         -G-----
         -Y---B-
         ----Y--
-        `,
-        gridRules
+        `
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
@@ -393,8 +382,7 @@ describe("Board", () => {
         -G-----
         -Y---Bb
         ----Y--
-        `,
-        gridRules
+        `
       );
       const areas = board.getOpenAreas();
       const colorOrderings = areas.map((area) => {
@@ -417,7 +405,7 @@ describe("Board", () => {
           BbY
           OYy
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects separated sides", () => {
       const boardString = dedent`
@@ -425,7 +413,7 @@ describe("Board", () => {
           --y--
           O-Y--
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("accepts grids with items on same side of a separation", () => {
       const boardString = dedent`
@@ -433,7 +421,7 @@ describe("Board", () => {
           --y--
           O-Y-G
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(true);
     });
     it("accepts a board with open space", () => {
       const boardString = dedent`
@@ -442,7 +430,7 @@ describe("Board", () => {
           OB-
           Y--
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(true);
     });
     it("rejects a board with knotted endpoints", () => {
       const boardString = dedent`
@@ -450,7 +438,7 @@ describe("Board", () => {
           ---
           Y-B
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects a board with knotted tails", () => {
       const boardString = dedent`
@@ -459,7 +447,7 @@ describe("Board", () => {
           ---b
           Yy-B
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects a board with a trapped end", () => {
       const boardString = dedent`
@@ -468,7 +456,7 @@ describe("Board", () => {
           -b#
           Ybb
         `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("accepts this specific troublesome board", () => {
       const boardString = dedent`
@@ -480,7 +468,7 @@ describe("Board", () => {
       -Y---B-
       ----Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(true);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(true);
     });
     it("rejects lines that close back on themself", () => {
       const boardString = dedent`
@@ -492,7 +480,7 @@ describe("Board", () => {
       -Y---Bb
       ----Ybb
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects simple abandoned area", () => {
       const boardString = dedent`
@@ -500,7 +488,7 @@ describe("Board", () => {
       -Y---Bb
       ----Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects abandoned area with islands", () => {
       const boardString = dedent`
@@ -510,7 +498,7 @@ describe("Board", () => {
       -Y---Bb
       ----Y--
       `;
-      expect(Board.fromString(boardString, gridRules).isValidPartial()).toBe(false);
+      expect(Board.fromString(boardString).isValidPartial()).toBe(false);
     });
     it("rejects abandoned area with islands (complex)", () => {
       const boardString = dedent`
@@ -522,7 +510,7 @@ describe("Board", () => {
       -Y---B-
       ----Y--
       `;
-      const board = Board.fromString(boardString, gridRules);
+      const board = Board.fromString(boardString);
       expect(board.isValidPartial()).toBe(true);
     });
     it("rejects abandoned area with islands (complex)", () => {
@@ -535,7 +523,7 @@ describe("Board", () => {
       -Y---B-
       ----Yb-
       `;
-      const board = Board.fromString(boardString, gridRules);
+      const board = Board.fromString(boardString);
       board.solveChoicelessMoves();
       expect(board.isValidPartial()).toBe(false);
     });
@@ -549,7 +537,7 @@ describe("Board", () => {
       -Y---Bb
       ----Y--
       `;
-      const board = Board.fromString(boardString, gridRules);
+      const board = Board.fromString(boardString);
       board.solveChoicelessMoves();
       expect(board.isValidPartial()).toBe(false);
     });
@@ -563,7 +551,7 @@ describe("Board", () => {
       -Y---B-
       ----Y--
       `;
-      const board = Board.fromString(boardString, gridRules);
+      const board = Board.fromString(boardString);
       board.solveChoicelessMoves();
       expect(board.isValidPartial()).toBe(false);
     });
@@ -575,8 +563,7 @@ describe("Board", () => {
           ---B
           b--Y
           BY##
-          `,
-        gridRules
+          `
       );
       const moves = board.getValidMovesFrom({ x: 0, y: 1 });
       expect(moves).toMatchObject([
@@ -597,8 +584,7 @@ describe("Board", () => {
         -G-----
         -Y---B-
         ----Y--
-        `,
-        gridRules
+        `
       );
       expect(
         await board.getValidMovesFrom({
@@ -625,8 +611,7 @@ describe("Board", () => {
         -G-----
         -Y---B-
         ----Y--
-        `,
-        gridRules
+        `
       );
       expect(
         await board.getValidMovesFrom({
@@ -662,8 +647,7 @@ describe("Board", () => {
         ------
         ------
         OBY---
-        `,
-        gridRules
+        `
       );
       const solution = await board.solveChoicelessMoves();
       expect(solution.toString()).toEqual(dedent`
@@ -686,8 +670,7 @@ describe("Board", () => {
         -G-----
         -Y---B-
         ----Y--
-        `,
-        gridRules
+        `
       );
       const solution = await board.solveChoicelessMoves();
       // TODO: Update once this solves further
@@ -710,8 +693,7 @@ describe("Board", () => {
             BYO
             byo
             BYO
-          `,
-          gridRules
+          `
         ).isComplete()
       ).toBe(true);
       expect(
@@ -720,8 +702,7 @@ describe("Board", () => {
             ByY
             by-
             BY-
-          `,
-          gridRules
+          `
         ).isComplete()
       ).toBe(false);
     });
@@ -733,8 +714,7 @@ describe("Board", () => {
             B
             b
             B
-          `,
-          gridRules
+          `
         ).isComplete()
       ).toBe(true);
     });
@@ -746,8 +726,7 @@ describe("Board", () => {
             BYO
             byo
             BYO
-          `,
-          gridRules
+          `
         ).isComplete()
       ).toBe(true);
     });
@@ -759,8 +738,7 @@ describe("Board", () => {
             o#bb
             oo#B
             YooO
-          `,
-          gridRules
+          `
         ).isComplete()
       ).toBe(false);
     });
@@ -770,8 +748,7 @@ describe("Board", () => {
       const board = Board.fromString(
         dedent`
         B-B
-        `,
-        gridRules
+        `
       );
       expect((await board.solve()).toString()).toEqual(dedent`
       BbB
@@ -782,8 +759,7 @@ describe("Board", () => {
         dedent`
         Y---
         B-BY
-        `,
-        gridRules
+        `
       );
       expect((await board.solve()).toString()).toEqual(dedent`
       Yyyy
@@ -797,8 +773,7 @@ describe("Board", () => {
         -B-
         ---
         YBY
-        `,
-        gridRules
+        `
       );
       expect((await board.solve()).toString()).toEqual(dedent`
       yyy
@@ -814,8 +789,7 @@ describe("Board", () => {
         ---R-
         -B---
         ---RY
-        `,
-        gridRules
+        `
       );
       expect((await board.solve()).toString()).toEqual(dedent`
       YByyy
@@ -832,8 +806,7 @@ describe("Board", () => {
         -----
         #-R-#
         #---#
-        `,
-        gridRules
+        `
       );
       expect((await board.solve()).toString()).toEqual(dedent`
       YbbbY
@@ -852,8 +825,7 @@ describe("Board", () => {
         ----O
         YB-R-
         B-GO-
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -876,8 +848,7 @@ describe("Board", () => {
         -RG--
         --B--
         GRY--
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -901,8 +872,7 @@ describe("Board", () => {
         --G---
         ------
         ----YR
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -931,8 +901,7 @@ describe("Board", () => {
         -----C-
         ---O-G-
         R------
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -963,8 +932,7 @@ describe("Board", () => {
         ---R----
         -B-G--OY
         -------M
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -995,8 +963,7 @@ describe("Board", () => {
         --R--C--
         ------C-
         --------
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -1018,8 +985,7 @@ describe("Board", () => {
         ------R--
         ------C--
         --------B
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -1054,8 +1020,7 @@ describe("Board", () => {
         ----M-R-K-
         --------Y-
         ---------B
-        `,
-        gridRules
+        `
       );
       const solution = await board.solve();
       console.log("solution\n" + solution.toString());
@@ -1156,8 +1121,7 @@ describe("findPath", () => {
     const board = Board.fromString(
       dedent`
       B--B
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 0 },
@@ -1178,8 +1142,7 @@ describe("findPath", () => {
       -
       -
       B
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 0 },
@@ -1198,8 +1161,7 @@ describe("findPath", () => {
       dedent`
       B#B
       ---
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 0 },
@@ -1220,8 +1182,7 @@ describe("findPath", () => {
       BYB
       -y-
       ---
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 0 },
@@ -1244,8 +1205,7 @@ describe("findPath", () => {
       -----
       -----
       ----B
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 0 },
@@ -1263,8 +1223,7 @@ describe("findPath", () => {
       B-#--B
       #---#-
       ###---
-      `,
-      gridRules
+      `
     );
     const path = board.findPath(
       { x: 0, y: 2 },
@@ -1285,8 +1244,7 @@ describe("findPath", () => {
       const board = Board.fromString(
         dedent`
         -bB--B
-        `,
-        gridRules
+        `
       );
       const path = board.findPath(
         { x: 0, y: 0 },
@@ -1301,8 +1259,7 @@ describe("findPath", () => {
         --#bbb
         B--b--
         --#B--
-        `,
-        gridRules
+        `
       );
       const path = board.findPath(
         { x: 5, y: 0 },
@@ -1322,8 +1279,7 @@ describe("pushColor", () => {
       -----
       BbbbB
       --Y--
-      `,
-      gridRules
+      `
     );
     board.pushColor(new Position({ x: 2, y: 2 }), "Y");
     expect(board.toString()).toEqual(dedent`
@@ -1340,8 +1296,7 @@ describe("pushColor", () => {
       BbbbB
       -----
       -----
-      `,
-      gridRules
+      `
     );
     board.pushColor(new Position({ x: 2, y: 1 }), "Y");
     expect(board.toString()).toEqual(dedent`
@@ -1358,8 +1313,7 @@ describe("pushColor", () => {
       BbbbB
       --#--
       -----
-      `,
-      gridRules
+      `
     );
     board.pushColor(new Position({ x: 2, y: 1 }), "Y");
     expect(board.toString()).toEqual(dedent`
@@ -1376,8 +1330,7 @@ describe("pushColor", () => {
       BbbbB
       RrrrR
       -----
-      `,
-      gridRules
+      `
     );
     board.pushColor(new Position({ x: 2, y: 1 }), "Y");
     expect(board.toString()).toEqual(dedent`
@@ -1394,8 +1347,7 @@ describe("pushColor", () => {
       -----
       --Y--
       BbbbB
-      `,
-        gridRules
+      `
       );
       board.pushColor(new Position({ x: 2, y: 2 }), "Y");
       expect(board.toString()).toEqual(dedent`
@@ -1413,8 +1365,7 @@ describe("pushColor", () => {
         ---Y---
         -BbbbB-
         -RrrrR-
-        `,
-        gridRules
+        `
       );
       board.pushColor(new Position({ x: 2, y: 2 }), "Y");
       expect(board.toString()).toEqual(dedent`

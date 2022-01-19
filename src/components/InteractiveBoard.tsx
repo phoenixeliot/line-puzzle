@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, { CSSProperties, useEffect } from "react";
+import React, { CSSProperties, useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import styles from "../../styles/InteractiveBoard.module.css";
 import { Board, Position } from "../Board";
@@ -39,6 +39,7 @@ const InteractiveBoard = observer(function InteractiveBoard({
   };
   const [dragState, setDragState] = React.useState(defaultDragState);
   const startDrag = (event) => {
+    console.log("Starting drag!");
     const domCell = event.target.closest("[data-cellpos]");
     if (!domCell) return;
     const position = JSON.parse(domCell.getAttribute("data-cellpos"));
@@ -60,6 +61,8 @@ const InteractiveBoard = observer(function InteractiveBoard({
     const newState: any = {
       position: newPosition,
     };
+    // console.log(cell);
+    // console.log(cell.color, dragState.color);
     if (cell.color !== dragState.color) {
       // TODO: turn these into reducers or something
       if (useAutoPathing) {
@@ -70,11 +73,12 @@ const InteractiveBoard = observer(function InteractiveBoard({
         //   )} with color ${dragState.color}: Success=${success}`
         // );
         newState.lastPlayablePosition = newPosition;
-      }
-      if (usePushMode) {
+      } else if (usePushMode) {
         // board.solveChoicelessMoves();
-        board.pushColor(newPosition, dragState.color);
+        board.pushColor(prevPosition, newPosition, dragState.color);
         newState.lastPlayablePosition = newPosition;
+      } else {
+        // TODO: Just set the color and connect the edge. Use this as default while working on other features.
       }
     }
     setDragState({
@@ -85,6 +89,28 @@ const InteractiveBoard = observer(function InteractiveBoard({
   const stopDrag = (event) => {
     setDragState({ ...defaultDragState });
   };
+
+  const [autoSolveInterval, setAutoSolveInterval] = React.useState(null);
+  const autoSolveSteps = [
+    () => board.propagateEdgeConstraints(),
+    () => board.connectPathColors(),
+  ];
+  const toggleAutoSolve = () => {
+    if (autoSolveInterval) {
+      clearTimeout(autoSolveInterval);
+      setAutoSolveInterval(null);
+      return;
+    }
+    let currentStep = 0;
+    const doNextAutoSolveStep = () => {
+      console.log(currentStep);
+      autoSolveSteps[currentStep]();
+      currentStep = (currentStep + 1) % autoSolveSteps.length;
+      setAutoSolveInterval(setTimeout(doNextAutoSolveStep, 1000));
+    };
+    doNextAutoSolveStep();
+  };
+
   return (
     <>
       <div
@@ -115,8 +141,12 @@ const InteractiveBoard = observer(function InteractiveBoard({
               cell={cell}
               edges={edges}
               cellText={cell.isEndpoint && cell.color}
-              pathColor={CSS_COLOR_MAP[cell.color]?.pathColor}
-              textColor={CSS_COLOR_MAP[cell.color]?.textColor}
+              pathColor={
+                board.colorMap[cell.color] || CSS_COLOR_MAP[cell.color]?.pathColor
+              }
+              textColor={
+                board.colorMap[cell.color] || CSS_COLOR_MAP[cell.color]?.textColor
+              }
             />
           );
         })}
@@ -126,8 +156,10 @@ const InteractiveBoard = observer(function InteractiveBoard({
       <button onClick={() => board.propagateEdgeConstraints()}>
         Propagate edge constraints
       </button>
+      <button onClick={toggleAutoSolve}>Toggle auto-solver</button>
+      <button onClick={() => board.connectPathColors()}>Connect path colors</button>
       <div>
-        <code>{board.toString()}</code>
+        <pre>{board.toString()}</pre>
       </div>
       <div style={{ display: "flex", flexDirection: "row" }}>
         <pre>

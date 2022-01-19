@@ -44,9 +44,9 @@ export function getClockwiseDirectionsStartingWith(direction, directions) {
 export class Position extends Object {
   x: number;
   y: number;
-  constructor(obj: { x: number; y: number }) {
+  constructor(coords: { x: number; y: number }) {
     super();
-    const { x, y } = obj;
+    const { x, y } = coords;
     Object.assign(this, { x, y });
   }
   toString() {
@@ -163,6 +163,7 @@ export class Board {
     height: number;
   } = { width: 0, height: 0 };
   colors: Set<string>;
+  colorMap: Record<string, string>;
   consoleColorMap = {
     "-": ["dim"],
     "#": ["black", "whiteBg"],
@@ -184,16 +185,19 @@ export class Board {
   constructor(
     cells?: CellsCollection,
     edges?: EdgesCollection,
-    rules: Rules = gridRules
+    rules: Rules = gridRules,
+    colorMap?: Record<string, string>
   ) {
     this.cells = cells || {};
     this.edges = edges || {};
     this.rules = rules;
     this.dimensions = this._getDimensions();
     this.colors = this._getColors();
+    this.colorMap = colorMap;
     makeObservable(this, {
       cells: observable,
       edges: observable,
+      data: computed,
       rules: observable,
       dimensions: observable,
       connectPathToPosition: action,
@@ -203,6 +207,7 @@ export class Board {
       solve: action,
       solveChoicelessMoves: action,
       propagateEdgeConstraints: action,
+      connectPathColors: action,
     });
     // autorun(() => console.log(this.toString()));
   }
@@ -211,7 +216,11 @@ export class Board {
     return new Board(this.cells, this.edges, this.rules);
   }
 
-  static fromString(boardString, rules: Rules = gridRules) {
+  static fromString(
+    boardString,
+    rules: Rules = gridRules,
+    colorMap?: Record<string, string>
+  ) {
     const cells: CellsCollection = {};
     boardString
       .trim()
@@ -227,7 +236,7 @@ export class Board {
         })
       );
     const edges: EdgesCollection = {};
-    const board = new Board(cells, edges, rules);
+    const board = new Board(cells, edges, rules, colorMap);
 
     Object.values(cells).forEach((cell1: Cell) => {
       const pos1 = cell1.position;
@@ -296,8 +305,8 @@ export class Board {
     return (
       position.y >= 0 &&
       position.x >= 0 &&
-      position.y < this.data.length &&
-      position.x < this.data[0].length &&
+      position.y < this.dimensions.height &&
+      position.x < this.dimensions.width &&
       this.getColor(position) !== WALL
     );
   }
@@ -310,22 +319,39 @@ export class Board {
     this.getCell(position).color = color;
   }
 
-  // TODO: Refactor once I have connections embedded in the data
-  getConnections(position: Position): Array<Position> {
-    const cell = this.getCell(position);
-    if (!cell.hasLine) return []; // For walls, etc
-    return this.getNeighborCells(position)
-      .filter((neighborCell) => {
-        return neighborCell.hasLine && neighborCell.color == cell.color;
-      })
-      .map((c) => c.position);
+  setEdge(pos1: Position, pos2: Position, edgeState: Partial<Edge>) {
+    const edgeId = createEdgeIdFromPositions(pos1, pos2);
+    Object.assign(this.edges[edgeId], edgeState);
   }
 
-  pushColor(position: Position, color: string, avoidColors: Array<string> = []): boolean {
+  // TODO: Refactor once I have connections embedded in the data
+  getConnectedNeighborPositions(position: Position): Array<Position> {
+    const cell = this.getCell(position);
+    if (!cell.hasLine) return []; // For walls, etc
+
+    const edges = this.getNeighborEdges(position);
+    // TODO: DRY with GridCell
+    return Object.keys(edges)
+      .map((edgeId) => {
+        if (!edges[edgeId].connected) return null;
+        const positions = getPositionsFromEdgeId(edgeId);
+        let otherPos = isEqualObj(position, positions[0]) ? positions[1] : positions[0];
+        return otherPos;
+      })
+      .filter((v) => v);
+  }
+
+  pushColor(
+    prevPosition: Position,
+    position: Position,
+    color: string,
+    avoidColors: Array<string> = []
+  ): boolean {
     const cell = this.getCell(position);
     if (cell.isEndpoint) return cell.color === color;
-    const connections = this.getConnections(position);
+    const connections = this.getConnectedNeighborPositions(position);
     this.setColor(position, color);
+    this.setEdge(prevPosition, position, { connected: true });
     if (connections.length == 2) {
       this.connectPathWithPushing(
         connections[0],
@@ -376,10 +402,12 @@ export class Board {
     };
     const path = this.findPath(pos1, pos2, allowOtherColorCollisionRules);
     if (!path) return false; // No path was found
-    for (const pos of path) {
+    for (const [posIndex, pos] of path.entries()) {
+      if (posIndex === 0) continue; // TODO: Debug/confirm
+      const prevPos = path[posIndex - 1];
       const cell = this.getCell(pos);
       if (cell.color === color) continue; // Skip if it's already colored correctly
-      this.pushColor(pos, color, avoidColors.concat([color]));
+      this.pushColor(prevPos, pos, color, avoidColors.concat([color]));
     }
     return true;
   }
@@ -464,7 +492,7 @@ export class Board {
     }
   }
 
-  getCell(position: Position) {
+  getCell(position: Position): Cell {
     let cell = null;
     try {
       cell = this.data[position.y][position.x];
@@ -803,10 +831,10 @@ export class Board {
     const directions = this.rules.getNeighborDirections(position);
     return directions
       .filter((direction) => {
-        const newPosition = {
+        const newPosition = new Position({
           x: position.x + direction.dx,
           y: position.y + direction.dy,
-        };
+        });
         if (!this.isValidPosition(newPosition)) return false;
         if (!this.getCell(newPosition).isEmpty) return false;
         const hypotheticalBoard = new Board(this.cells, this.edges, this.rules);
@@ -817,7 +845,10 @@ export class Board {
       .map((direction) => {
         return {
           direction,
-          position: { x: position.x + direction.dx, y: position.y + direction.dy },
+          position: new Position({
+            x: position.x + direction.dx,
+            y: position.y + direction.dy,
+          }),
         };
       });
   }
@@ -969,6 +1000,35 @@ export class Board {
           }
         });
       }
+
+      // TODO: If two cells are connected to different colors, they must not connect
+      edgeIds.forEach((edgeId) => {
+        const [pos1, pos2] = getPositionsFromEdgeId(edgeId);
+        const cell1 = this.getCell(pos1);
+        const cell2 = this.getCell(pos2);
+        if (cell1.hasLine && cell2.hasLine && cell1.color !== cell2.color) {
+          this.edges[edgeId].possible = false;
+        }
+      });
+
+      // TODO: If two cells are connected to paths that touch (without connecting), they must not connect
     }
+  }
+
+  connectPathColors() {
+    for (const cell of Object.values(this.cells)) {
+      if (cell.hasLine) {
+        const neighborPositions = this.getConnectedNeighborPositions(cell.position);
+        for (const neighborPos of neighborPositions) {
+          const neighborCell = this.getCell(neighborPos);
+          if (neighborCell.hasLine) continue;
+          neighborCell.color = cell.color;
+        }
+      }
+    }
+  }
+
+  solveCorners() {
+    // Find square regions that have exactly 2 sides exposed
   }
 }
