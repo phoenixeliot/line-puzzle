@@ -76,6 +76,17 @@ export interface PositionDelta {
   dy: number;
 }
 
+export function createEdgeIdFromPositions(
+  pos1: Position,
+  pos2: Position
+): EdgeIdentifier {
+  if (Position.min(pos1, pos2) === pos2) {
+    // Swap so the lesser-sorted Position is first, so identifiers are unique
+    [pos1, pos2] = [pos2, pos1];
+  }
+  return `${new Position(pos1).toString()};${new Position(pos2).toString()}`;
+}
+
 export interface Rules {
   getNeighborDirections: (pos: Position) => Array<PositionDelta>;
 }
@@ -186,6 +197,7 @@ export class Board {
       solve: action,
       _solve: action,
       solveChoicelessMoves: action,
+      propagateEdgeConstraints: action,
     });
     // autorun(() => console.log(this.toString()));
   }
@@ -209,8 +221,36 @@ export class Board {
           cells[cell.position.toString()] = cell;
         })
       );
-    const edges = {};
-    return new Board(cells, edges, rules);
+    const edges: EdgesCollection = {};
+    const board = new Board(cells, edges, rules);
+
+    Object.values(cells).forEach((cell1: Cell) => {
+      const pos1 = cell1.position;
+      board.getNeighborCells(cell1.position).forEach((cell2: Cell) => {
+        const pos2 = cell2.position;
+        const edgeId = createEdgeIdFromPositions(pos1, pos2);
+        if (!edges[edgeId]) {
+          const connected = cell1.hasLine && cell2.hasLine && cell1.color === cell2.color;
+
+          // Not a complete set of when an edge is possible, but it's a start. TODO: Maybe just defer this entirely if we have to do it again later anyway?
+          const possible =
+            connected ||
+            (!cell1.isWall &&
+              !cell2.isWall &&
+              !(cell1.hasLine && cell2.hasLine && cell1.color !== cell2.color) &&
+              (cell1.isEmpty || cell2.isEmpty));
+
+          edges[edgeId] = {
+            connected: connected,
+            possible: possible,
+          };
+        }
+      });
+    });
+
+    board.edges = edges;
+
+    return board;
   }
 
   // Stub for the old data format. TODO Replace usage of this with new format when it makes more sense
@@ -268,10 +308,10 @@ export class Board {
   // TODO: Refactor once I have connections embedded in the data
   getConnections(position: Position): Array<Position> {
     const cell = this.getCell(position);
-    if (!cell.hasLine()) return []; // For walls, etc
+    if (!cell.hasLine) return []; // For walls, etc
     return this.getNeighborCells(position)
       .filter((neighborCell) => {
-        return neighborCell.hasLine() && neighborCell.color == cell.color;
+        return neighborCell.hasLine && neighborCell.color == cell.color;
       })
       .map((c) => c.position);
   }
@@ -307,7 +347,7 @@ export class Board {
             this.isValidPosition(newPos) &&
             // !isEqual(pos, path.at(-2)) &&
             !path.some((prevPos) => {
-              return isEqual(new Position(newPos), new Position(prevPos));
+              return isEqualObj(newPos, prevPos);
             }) &&
             // Don't path through the currently pushing path, except to finish connecting
             (cell.color !== color || cell.isTail(this)) &&
@@ -354,7 +394,7 @@ export class Board {
             this.isValidPosition(newPos) &&
             // !isEqual(pos, path.at(-2)) &&
             !path.some((prevPos) => isEqualObj(newPos, prevPos)) &&
-            (cell.isEmpty() ||
+            (cell.isEmpty ||
               (cell.isTail(this) && cell.color === this.getCell(pos1).color))
           );
         });
@@ -432,16 +472,22 @@ export class Board {
     const directions = this.rules.getNeighborDirections(position);
     return directions
       .map((direction) => {
-        const newPosition = {
+        const newPosition = new Position({
           x: position.x + direction.dx,
           y: position.y + direction.dy,
-        };
+        });
         if (!this.isValidPosition(newPosition)) {
           return null;
         }
         return newPosition;
       })
       .filter((c) => c);
+  }
+
+  getNeighborEdgeIds(position): string[] {
+    return this.getNeighborPositions(position).map((pos2) => {
+      return createEdgeIdFromPositions(position, pos2);
+    });
   }
 
   getNeighborCells(position) {
@@ -580,7 +626,7 @@ export class Board {
     );
     // First loop through all empty spaces
     // THEN loop through all other spaces (which should be fully surrounded singlets only)
-    for (const filterFn of [(pos) => this.getCell(pos).isEmpty(), (pos) => true]) {
+    for (const filterFn of [(pos) => this.getCell(pos).isEmpty, (pos) => true]) {
       while (new Set(remainingPositions.filter(filterFn)).size > 0) {
         const cell = this.getCell(remainingPositions.getOne(filterFn));
         // either:
@@ -749,7 +795,7 @@ export class Board {
           y: position.y + direction.dy,
         };
         if (!this.isValidPosition(newPosition)) return false;
-        if (!this.getCell(newPosition).isEmpty()) return false;
+        if (!this.getCell(newPosition).isEmpty) return false;
         const hypotheticalBoard = new Board(this.cells, this.edges, this.rules);
         hypotheticalBoard.setColor(newPosition, cell.color);
         if (!hypotheticalBoard.isValidPartial()) return false;
@@ -806,7 +852,7 @@ export class Board {
     // - TODO Move along the perimeter if touching the inactive edge
     // - TODO Move toward the same color tail
     for (const tail of this.iterateTails()) {
-      for (const emptyCell of this.getNeighborCells(tail).filter((n) => n.isEmpty())) {
+      for (const emptyCell of this.getNeighborCells(tail).filter((n) => n.isEmpty)) {
         const hypothesisBoard = new Board(this.cells, this.edges, this.rules);
         hypothesisBoard.setColor(emptyCell.position, tail.color);
         // console.log(`at depth ${level}:\n${hypothesisBoard.toString()}`);
@@ -847,7 +893,7 @@ export class Board {
       madeChanges = false;
       for (const tail of this.iterateTails()) {
         const neighbors = this.getNeighborCells(tail);
-        const emptyNeighbors = neighbors.filter((neighbor) => neighbor.isEmpty());
+        const emptyNeighbors = neighbors.filter((neighbor) => neighbor.isEmpty);
         if (emptyNeighbors.length === 1) {
           const emptyNeighbor = emptyNeighbors[0];
           this.setColor(emptyNeighbor.position, tail.color);
@@ -864,5 +910,52 @@ export class Board {
       }
     }
     return this;
+  }
+
+  // Find edges that must be or cannot be connected, and update them
+  propagateEdgeConstraints() {
+    for (const cellId in this.cells) {
+      const edgeIds = this.getNeighborEdgeIds(Position.fromString(cellId));
+      const edges = edgeIds.map((id) => this.edges[id]);
+
+      const cell = this.cells[cellId];
+      const requiredConnections = cell.requiredConnections;
+      const currentConnections = edges.reduce(
+        (acc, edge) => (edge.connected ? acc + 1 : acc),
+        0
+      );
+      const possibleConnections = edges.reduce(
+        (acc, edge) => (edge.possible ? acc + 1 : acc),
+        0
+      );
+
+      // If more are required than are possible, or more are connected than are required, mark this as an error
+      if (requiredConnections > possibleConnections) {
+        cell.error = true;
+        cell.errorMessage = `This cell requires ${requiredConnections} but can only make a max of ${possibleConnections}`;
+      }
+      if (currentConnections > requiredConnections) {
+        cell.error = true;
+        cell.errorMessage = `This cell requires exactly ${requiredConnections} but has ${possibleConnections}, which it too many.`;
+      }
+
+      // If only # required are possible, connect them
+      if (requiredConnections == possibleConnections) {
+        edges.forEach((edge) => {
+          if (edge.possible) {
+            edge.connected = true;
+          }
+        });
+      }
+
+      // If # required are already connected, mark the others impossible
+      if (requiredConnections == currentConnections) {
+        edges.forEach((edge) => {
+          if (!edge.connected) {
+            edge.possible = false;
+          }
+        });
+      }
+    }
   }
 }

@@ -6,6 +6,7 @@ import { AreaColors, Board, Position } from "../src/Board";
 import * as gridRules from "../src/gridRules";
 import * as hexRules from "../src/hexRules";
 import { SerializedSet } from "../src/SerializedSet";
+import { toJS } from "mobx";
 
 describe("dedent utility", () => {
   it("Removes extraneous whitespace", () => {
@@ -27,6 +28,36 @@ describe("Board", () => {
         YO--
       `;
       expect(Board.fromString(boardString, gridRules).toString()).toEqual(boardString);
+    });
+  });
+  describe("fromString", () => {
+    it("generates a basic cell map", () => {
+      const boardString = dedent`
+      O-
+      O-
+      `;
+      const board = Board.fromString(boardString);
+      console.log(JSON.stringify(board.cells));
+      expect(board.cells).toMatchObject({
+        "0,0": { color: "O", position: { x: 0, y: 0 }, isEndpoint: true },
+        "1,0": { color: "-", position: { x: 1, y: 0 }, isEndpoint: false },
+        "0,1": { color: "O", position: { x: 0, y: 1 }, isEndpoint: true },
+        "1,1": { color: "-", position: { x: 1, y: 1 }, isEndpoint: false },
+      });
+    });
+    it("generates a basic edge map", () => {
+      const boardString = dedent`
+      O-
+      O-
+      `;
+      const board = Board.fromString(boardString);
+      console.log(JSON.stringify(board.edges));
+      expect(board.edges).toMatchObject({
+        "0,0;1,0": { connected: false },
+        "0,0;0,1": { connected: true, possible: true },
+        "1,0;1,1": { connected: false },
+        "0,1;1,1": { connected: false },
+      });
     });
   });
   describe("iterateTails", () => {
@@ -1033,6 +1064,61 @@ describe("Board", () => {
       expect(solution.toString()).toEqual(``);
     }, 1000);
   });
+
+  describe("propagateEdgeConstraints", () => {
+    it("solves a trivial connection", () => {
+      const board = Board.fromString(dedent`
+      O-O
+      `);
+      console.log(toJS(board.edges));
+      expect(board.edges).toMatchObject({
+        "0,0;1,0": { connected: false, possible: true },
+        "1,0;2,0": { connected: false, possible: true },
+      });
+      board.propagateEdgeConstraints();
+      console.log(toJS(board.edges));
+      expect(board.edges).toMatchObject({
+        "0,0;1,0": { connected: true, possible: true },
+        "1,0;2,0": { connected: true, possible: true },
+      });
+    });
+    it("solves a longer choiceless path", () => {
+      const board = Board.fromString(dedent`
+      #---#
+      O-#-O
+      `);
+      console.log(toJS(board.edges));
+      board.propagateEdgeConstraints();
+      console.log(toJS(board.edges));
+      expect(board.edges).toMatchObject({
+        "0,0;1,0": { connected: false, possible: false },
+        "0,0;0,1": { connected: false, possible: false },
+        "1,0;2,0": { connected: true, possible: true },
+        "1,0;1,1": { connected: true, possible: true },
+        "2,0;3,0": { connected: true, possible: true },
+        "3,0;3,1": { connected: true, possible: true },
+        "4,0;4,1": { connected: false, possible: false },
+        "3,0;4,0": { connected: false, possible: false },
+        "0,1;1,1": { connected: true, possible: true },
+        "2,0;2,1": { connected: false, possible: false },
+        "2,1;3,1": { connected: false, possible: false },
+        "1,1;2,1": { connected: false, possible: false },
+        "3,1;4,1": { connected: true, possible: true },
+      });
+    });
+    it("marks an unsolvable cell as having an error", () => {
+      const board = Board.fromString(dedent`
+      #-#
+      O-O
+      `);
+      console.log(toJS(board.edges));
+      board.propagateEdgeConstraints();
+      console.log(toJS(board.edges));
+      expect(board.cells).toMatchObject({
+        "1,0": { error: true },
+      });
+    });
+  });
 });
 
 describe("findPath", () => {
@@ -1049,7 +1135,7 @@ describe("findPath", () => {
           board.isValidPosition(newPos) &&
           // !isEqual(pos, path.at(-2)) &&
           !path.some((prevPos) => isEqual(newPos, prevPos)) &&
-          (cell.isEmpty() || (cell.isTail(board) && cell.color === startColor))
+          (cell.isEmpty || (cell.isTail(board) && cell.color === startColor))
         );
       });
       return newPositions.map((newPos) => {

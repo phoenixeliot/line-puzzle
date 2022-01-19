@@ -24,6 +24,8 @@ export class Cell {
   position: Position;
   isEndpoint: boolean;
   type: CellType;
+  error: boolean = false;
+  errorMessage: string = "";
 
   constructor({
     color,
@@ -54,32 +56,38 @@ export class Cell {
   }
 
   getType() {
-    if (this.isEmpty()) {
+    if (this.isEmpty) {
       return CellType.EMPTY;
-    } else if (this.isWall()) {
+    } else if (this.isWall) {
       return CellType.WALL;
     } else if (this.isEndpoint) {
       return CellType.ENDPOINT;
-    } else if (this.hasLine()) {
+    } else if (this.hasLine) {
       return CellType.LINE_SEGMENT;
     } else {
       return CellType.UNKNOWN;
     }
   }
 
-  hasLine() {
+  get requiredConnections() {
+    if (this.isWall) return 0;
+    if (this.isEndpoint) return 1;
+    return 2;
+  }
+
+  get hasLine() {
     return COLORS.includes(this.color);
   }
 
-  isKnownType() {
+  get isKnownType() {
     return [...COLORS, ...WALL, ...EMPTY].includes(this.color);
   }
 
-  isEmpty() {
+  get isEmpty() {
     return EMPTY.includes(this.color);
   }
 
-  isWall() {
+  get isWall() {
     return WALL.includes(this.color);
   }
 
@@ -87,6 +95,6 @@ export class Cell {
    * I may need to rename this. "Active" means cell is either a tail or empty; it can still be connected to by neighboring cells.
    */
   isActive(board: Board) {
-    return this.isTail(board) || EMPTY.includes(this.color);
+    return this.isTail(board) || this.isEmpty;
   }
 }

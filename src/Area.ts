@@ -55,7 +55,7 @@ export class Area {
 
   getInnerColors(board: Board) {
     const cells = this.body.map((p) => board.getCell(p));
-    return new Set(cells.filter((c) => c.hasLine()).map((c) => c.color));
+    return new Set(cells.filter((c) => c.hasLine).map((c) => c.color));
   }
 
   static fromCell(board: Board, cell: Cell): Area {
@@ -72,7 +72,7 @@ export class Area {
     while (growingEdge.size > 0) {
       for (const newPos of growingEdge) {
         // Don't explore "through" tails; tails can close off an area from another.
-        if (board.getCell(newPos).isEmpty()) {
+        if (board.getCell(newPos).isEmpty) {
           // Breadth-first include all active neighbors in the space to explore
           const unexploredNeighbors = board
             .getNeighborCells(newPos)
